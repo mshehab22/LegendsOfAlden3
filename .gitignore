@@ -25,3 +25,11 @@ Content/ParagonGreystone/
 Content/Fab/
 Content/MSPresets/
 Content/Maps/
+
+# =========================
+# Unreal map / world partition generated files
+# =========================
+Content/__ExternalActors__/
+Content/__ExternalObjects__/
+Content/Developers/
+
