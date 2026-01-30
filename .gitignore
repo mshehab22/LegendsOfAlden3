@@ -1,0 +1,27 @@
+# =========================
+# Unreal Engine generated
+# =========================
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# =========================
+# IDE / OS
+# =========================
+.vs/
+*.sln
+.DS_Store
+Thumbs.db
+
+# =========================
+# Heavy / course assets (exclude from GitHub)
+# =========================
+Content/Animal_Lion/
+Content/AnimalVarietyPack/
+Content/FBX_Unreal_Animations/
+Content/MedievalDungeon/
+Content/ParagonGreystone/
+Content/Fab/
+Content/MSPresets/
+Content/Maps/
