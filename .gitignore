@@ -15,16 +15,11 @@ Saved/
 Thumbs.db
 
 # =========================
-# Heavy / course assets (exclude from GitHub)
+# Vendor / Marketplace Asset Packs
 # =========================
-Content/Animal_Lion/
-Content/AnimalVarietyPack/
-Content/FBX_Unreal_Animations/
-Content/MedievalDungeon/
-Content/ParagonGreystone/
-Content/Fab/
-Content/MSPresets/
-Content/Maps/
+Content/AssetsPacks/
+Assets
+
 
 # =========================
 # Unreal map / world partition generated files
