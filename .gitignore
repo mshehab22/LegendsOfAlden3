@@ -19,7 +19,8 @@ Thumbs.db
 # =========================
 Content/AssetsPacks/
 Assets
-
+Content/Fab
+Content/FBX_Unreal_Animations
 
 # =========================
 # Unreal map / world partition generated files
