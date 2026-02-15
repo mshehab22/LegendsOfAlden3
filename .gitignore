@@ -7,6 +7,11 @@ Intermediate/
 Saved/
 
 # =========================
+# Claude Code
+# =========================
+.claude/
+
+# =========================
 # IDE / OS
 # =========================
 .vs/
@@ -15,8 +20,9 @@ Saved/
 Thumbs.db
 
 # =========================
-# Heavy / course assets (exclude from GitHub)
+# Vendor / Marketplace Asset Packs
 # =========================
+<<<<<<< HEAD
 Content/Animal_Lion/
 Content/AnimalVarietyPack/
 Content/FBX_Unreal_Animations/
@@ -31,6 +37,13 @@ Content/MetaSounds/
 Content/MetaSounds/
 Content/AnimationMontages/
 
+=======
+Content/AssetsPacks/
+Assets
+Content/Fab
+Content/FBX_Unreal_Animations
+Maps
+>>>>>>> main
 
 # =========================
 # Unreal map / world partition generated files
