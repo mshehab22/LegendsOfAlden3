@@ -36,8 +36,15 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 }
 
-/*Put this at the end of OnBoxOverlap
+//Put this at the end of OnBoxOverlap
 
-	BoxHit.GetActor()
-*/
+//if (BoxHit.GetActor())
+//{
+//	IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
+//	if (HitInterface)
+//	{
+//		HitInterface->GitHit(BoxHit.ImpactPoint);
+//	}
+//}
+
 

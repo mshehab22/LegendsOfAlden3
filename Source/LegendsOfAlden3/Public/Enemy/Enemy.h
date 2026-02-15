@@ -7,6 +7,9 @@
 #include "Interface/HitInterface.h"
 #include "Enemy.generated.h"
 
+
+class UAnimMontage;
+
 UCLASS()
 class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 {
@@ -19,8 +22,18 @@ public:
 
 	virtual void GetHit(const FVector& ImpactPoint) override;
 
+	void DirectionalHitReact(const FVector& ImpactPoint);
+
+private:
+	// Animation montages
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* HitReactMontage;
+
 protected:
 	virtual void BeginPlay() override;
+
+	// Play montage functions
+	void PlayHitReactMontage(const FName& SectionName);
 
 public:
 
