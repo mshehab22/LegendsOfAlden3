@@ -2,10 +2,7 @@
 #include "Characters/PlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SphereComponent.h"
-<<<<<<< HEAD
-#include "Iterface/HitInterface.h"
-=======
->>>>>>> main
+#include "Interface/HitInterface.h"
 
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 {
@@ -38,11 +35,9 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 }
-<<<<<<< HEAD
 
 /*Put this at the end of OnBoxOverlap
 
 	BoxHit.GetActor()
 */
-=======
->>>>>>> main
+
