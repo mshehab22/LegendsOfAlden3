@@ -26,6 +26,8 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+		//virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+
 		FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 		FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 

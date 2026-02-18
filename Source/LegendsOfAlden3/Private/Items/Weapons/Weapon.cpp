@@ -2,7 +2,9 @@
 #include "Characters/PlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Interface/HitInterface.h"
+
 
 void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
 {
@@ -36,15 +38,37 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
 }
 
-//Put this at the end of OnBoxOverlap
-
-//if (BoxHit.GetActor())
+//void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 //{
-//	IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
-//	if (HitInterface)
-//	{
-//		HitInterface->GitHit(BoxHit.ImpactPoint);
-//	}
+//	const FVector Start;
+//	const FVector End;
+//
+//	UKismetSystemLibrary::BoxTraceSingle(
+//		this,
+//		Start,
+//		End,
+//		FVector(5.f, 5.f, 5.f),
+//		BoxTraceStart->
+//
+//	)
+//
+//
+//
+//	//Put this at the end of OnBoxOverlap
+//
+//	//if (BoxHit.GetActor())
+//	//{
+//	//	IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
+//	//	if (HitInterface)
+//	//	{
+//	//		HitInterface->GitHit(BoxHit.ImpactPoint);
+//	//	}
+//	//	IgnoreActors.AddUnique(BoxHit>GetActor());
+//	//}
 //}
+
+
+
+
 
 

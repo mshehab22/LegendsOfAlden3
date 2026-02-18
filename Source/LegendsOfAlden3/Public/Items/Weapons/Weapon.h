@@ -16,12 +16,20 @@ class LEGENDSOFALDEN3_API AWeapon : public AItem
 
 		void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
 
+		TArray<AActor*> IgnoreActors;
+
+
 	protected:
 		virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
 		virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 	
-	private:
+
+		/*UFUNCTION() 
+		void OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);*/
+	
+private:
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		USoundBase* EquipSound;
+
 };
