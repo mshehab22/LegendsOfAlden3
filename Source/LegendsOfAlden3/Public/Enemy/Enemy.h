@@ -16,26 +16,26 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
 
-public:
-	AEnemy();
-	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	public:
+		AEnemy();
+		virtual void Tick(float DeltaTime) override;
+		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void GetHit(const FVector& ImpactPoint) override;
+		virtual void GetHit(const FVector& ImpactPoint) override;
 
-	void DirectionalHitReact(const FVector& ImpactPoint);
+		void DirectionalHitReact(const FVector& ImpactPoint);
 
-private:
-	// Animation montages
-	UPROPERTY(EditDefaultsOnly, Category = Montages)
-	UAnimMontage* HitReactMontage;
+	private:
+		// Animation montages
+		UPROPERTY(EditDefaultsOnly, Category = Montages)
+		UAnimMontage* HitReactMontage;
 
-protected:
-	virtual void BeginPlay() override;
+	protected:
+		virtual void BeginPlay() override;
 
-	// Play montage functions
-	void PlayHitReactMontage(const FName& SectionName);
+		// Play montage functions
+		void PlayHitReactMontage(const FName& SectionName);
 
-public:
+	public:
 
 };

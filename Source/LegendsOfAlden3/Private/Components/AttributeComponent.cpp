@@ -1,4 +1,3 @@
-
 #include "Components/AttributeComponent.h"
 
 UAttributeComponent::UAttributeComponent()
@@ -11,9 +10,6 @@ UAttributeComponent::UAttributeComponent()
 void UAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-
-	
 }
  
 
