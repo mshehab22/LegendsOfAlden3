@@ -26,7 +26,8 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-		//virtual void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+		UFUNCTION(BlueprintCallable)
+		void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 		FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 		FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
@@ -65,7 +66,7 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		// Play montage functions
 		void PlayAttackMontage();
-		void PlayEquipMontage(const FName& SectionName);
+		void PlayEquipMontage(FName SectionName);
 
 		UFUNCTION(BlueprintCallable)
 		void AttackEnd();
