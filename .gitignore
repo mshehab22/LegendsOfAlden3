@@ -22,28 +22,9 @@ Thumbs.db
 # =========================
 # Vendor / Marketplace Asset Packs
 # =========================
-<<<<<<< HEAD
-Content/Animal_Lion/
-Content/AnimalVarietyPack/
-Content/FBX_Unreal_Animations/
-Content/MedievalDungeon/
-Content/ParagonGreystone/
-Content/Fab/
 Content/MSPresets/
-Content/Maps/
-Content/Items/
-Content/Characters/
-Content/MetaSounds/
-Content/MetaSounds/
-Content/AnimationMontages/
-
-=======
 Content/AssetsPacks/
 Assets
-Content/Fab
-Content/FBX_Unreal_Animations
-Maps
->>>>>>> main
 
 # =========================
 # Unreal map / world partition generated files
