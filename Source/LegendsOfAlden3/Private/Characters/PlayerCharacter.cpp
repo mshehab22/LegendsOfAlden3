@@ -8,6 +8,7 @@
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Animation/AnimMontage.h"
+#include "Components/BoxComponent.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -64,6 +65,14 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Interact);
 
 		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
+	}
+}
+
+void APlayerCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (EquippedWeapon && (EquippedWeapon->GetWeaponBox()))
+	{
+		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled );
 	}
 }
 
