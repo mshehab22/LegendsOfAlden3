@@ -4,6 +4,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
+#include "Interfaces/HitInterface.h"
+
 
 AWeapon::AWeapon()
 {
@@ -68,6 +70,11 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);
 
+	for (AActor* Actor : IgnoreActors)
+	{
+		ActorsToIgnore.AddUnique(Actor);
+	}
+
 	FHitResult BoxHit;
 
 	UKismetSystemLibrary::BoxTraceSingle
@@ -80,9 +87,20 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		ETraceTypeQuery::TraceTypeQuery1,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		BoxHit,
 		true
 	);
+
+	if (BoxHit.GetActor())
+	{
+		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
+		if (HitInterface)
+		{
+			HitInterface->GetHit(BoxHit.ImpactPoint);
+		}
+
+		IgnoreActors.AddUnique(BoxHit.GetActor());
+	}
 
 }

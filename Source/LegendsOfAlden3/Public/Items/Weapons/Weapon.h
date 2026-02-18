@@ -19,6 +19,8 @@ class LEGENDSOFALDEN3_API AWeapon : public AItem
 
 		void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
 
+		TArray<AActor*> IgnoreActors;
+
 	protected:
 		virtual void BeginPlay() override;
 
@@ -41,6 +43,7 @@ class LEGENDSOFALDEN3_API AWeapon : public AItem
 
 		UPROPERTY(VisibleAnywhere)
 		USceneComponent* BoxTraceEnd;
+
 
 	public:
 		FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }

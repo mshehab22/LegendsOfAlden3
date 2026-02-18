@@ -66,7 +66,7 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		// Play montage functions
 		void PlayAttackMontage();
-		void PlayEquipMontage(FName SectionName);
+		void PlayEquipMontage(const FName& SectionName);
 
 		UFUNCTION(BlueprintCallable)
 		void AttackEnd();

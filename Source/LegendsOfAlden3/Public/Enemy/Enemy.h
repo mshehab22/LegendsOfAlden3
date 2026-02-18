@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Interface/HitInterface.h"
+#include "Interfaces/HitInterface.h"
 #include "Enemy.generated.h"
 
 
@@ -29,6 +29,12 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 		// Animation montages
 		UPROPERTY(EditDefaultsOnly, Category = Montages)
 		UAnimMontage* HitReactMontage;
+
+		UPROPERTY(EditAnywhere, Category = Sounds)
+		USoundBase* HitSound;
+
+		UPROPERTY(EditAnywhere, Category = VisualEffects )
+		UParticleSystem* HitParticles;
 
 	protected:
 		virtual void BeginPlay() override;
