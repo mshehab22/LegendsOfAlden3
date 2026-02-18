@@ -24,3 +24,4 @@ class LEGENDSOFALDEN3_API IHitInterface
 public:
 	virtual void GetHit(const FVector& ImpactPoint) = 0;
 };
+ 
