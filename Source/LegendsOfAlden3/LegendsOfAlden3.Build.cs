@@ -8,7 +8,7 @@ public class LegendsOfAlden3 : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "HairStrandsCore", "GeometryCollectionEngine", "Niagara" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "HairStrandsCore", "GeometryCollectionEngine", "Niagara", "UMG", "AIModule" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });
 
