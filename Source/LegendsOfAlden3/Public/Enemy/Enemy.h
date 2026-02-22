@@ -53,10 +53,30 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 		UPROPERTY(EditAnywhere)
 		double CombatRadius = 500.f;
 
+		/**
+		* Navigation
+		*/
+
+		UPROPERTY()
+		class AAIController* EnemyController;
+
+
+		// Current patrol target
+		UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
+		AActor* PatrolTarget;
+
+		UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
+		TArray<AActor*> PatrolTargets;
+
+		UPROPERTY(EditAnywhere)
+		double PatrolRadius = 200.f;
+
 	protected:
 		virtual void BeginPlay() override;
 
 		void Die();
+		bool InTargetRange(AActor* Target, double Radius);
+
 
 		// Play montage functions
 		void PlayHitReactMontage(const FName& SectionName);
