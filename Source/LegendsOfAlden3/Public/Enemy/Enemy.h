@@ -23,11 +23,11 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 		AEnemy();
 		virtual void Tick(float DeltaTime) override;
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-		virtual void GetHit(const FVector& ImpactPoint) override;
+		virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 		void DirectionalHitReact(const FVector& ImpactPoint);
 		virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-	private:
 
+	private:
 		UPROPERTY(VisibleAnywhere)
 		UAttributeComponent* Attributes;
 
