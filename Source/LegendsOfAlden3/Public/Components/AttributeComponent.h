@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,22 +10,18 @@ class LEGENDSOFALDEN3_API UAttributeComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
-	UAttributeComponent();
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-protected:
-	virtual void BeginPlay() override;
+	public:	
+		UAttributeComponent();
+		virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-private:
-	UPROPERTY(EditAnywhere, Category = "Actor Attributes")
-	float Health;
+	protected:
+		virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Actor Attributes")
-	float MaxHealth;
+	private:
+		UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+		float Health;
 
-public:
-	void ReceiveDamage(float Damage);
-	float GetHealthPercent();
-	bool IsAlive();
+		UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+		float MaxHealth;
 };
  
