@@ -6,6 +6,7 @@
 
 
 class USphereComponent;
+class UNiagaraComponent;
 
 enum class EItemState : uint8
 {
@@ -43,6 +44,9 @@ class LEGENDSOFALDEN3_API AItem : public AActor
 		USphereComponent* Sphere;
 
 		EItemState ItemState = EItemState::EIS_World;
+
+		UPROPERTY(EditAnywhere)
+		UNiagaraComponent* EmbersEffect;
 
 	private:
 
