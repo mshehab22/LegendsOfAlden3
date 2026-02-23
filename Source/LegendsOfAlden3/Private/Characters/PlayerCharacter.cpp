@@ -35,6 +35,8 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	Tags.Add(FName("AldenCharacter"));
+
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
