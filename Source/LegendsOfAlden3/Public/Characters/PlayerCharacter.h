@@ -62,10 +62,12 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		void Interact();
 
-		void Attack();
+		void LightAttack();
+
+		void HeavyAttack();
 
 		// Play montage functions
-		void PlayAttackMontage();
+		void PlayAttackMontage(UAnimMontage* MontageToPlay);
 		void PlayEquipMontage(const FName& SectionName);
 
 		UFUNCTION(BlueprintCallable)
@@ -74,7 +76,10 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		bool CanAttack();
 
 		bool CanDisarm();
+
 		bool CanArm();
+
+		bool CanMove();
 
 		UFUNCTION(BlueprintCallable)
 		void Disarm();
@@ -85,8 +90,13 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		UFUNCTION(BlueprintCallable)
 		void FinishEquipping();
 
+		UFUNCTION(BlueprintCallable)
+		void EnableAttackBuffer();
+
 	private:
 		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+
+		EBufferedAttackType BufferedAttackType = EBufferedAttackType::EBAT_None;
 
 		UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 		EActionState ActionState = EActionState::EAS_Unoccupied;
@@ -103,6 +113,8 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		UPROPERTY(VisibleAnywhere, Category = Weapon)
 		AWeapon* EquippedWeapon;
 		
+		UPROPERTY()
+		UAnimMontage* CurrentAttackMontage = nullptr;
 		
 		// Animation montages
 		UPROPERTY(EditDefaultsOnly, Category = Montages)
@@ -110,5 +122,9 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		UPROPERTY(EditDefaultsOnly, Category = Montages)
 		UAnimMontage* EquipMontage;
+
+		bool bAttackBuffered = false;
+		bool bCanBufferAttack = false;
+		int32 LastAttackIndex = -1;
 	
 };
