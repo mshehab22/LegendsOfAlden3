@@ -7,6 +7,13 @@
 class USoundBase;
 class UBoxComponent;
 
+UENUM(BlueprintType)
+enum class EWeaponGripType : uint8
+{
+	EWGT_OneHanded UMETA(DisplayName = "One-Handed"), 
+	EWGT_TwoHanded UMETA(DisplayName = "Two-Handed"),
+};
+
 UCLASS()
 class LEGENDSOFALDEN3_API AWeapon : public AItem
 {
@@ -34,7 +41,14 @@ class LEGENDSOFALDEN3_API AWeapon : public AItem
 		UFUNCTION(BlueprintImplementableEvent)
 		void CreateFields(const FVector& FieldLocation);
 
+
 	private:
+		UPROPERTY(EditDefaultsOnly, Category = "Combat")
+		UAnimMontage* LightAttackMontage;
+
+		UPROPERTY(EditDefaultsOnly, Category = "Combat")
+		UAnimMontage* HeavyAttackMontage;
+
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		USoundBase* EquipSound;
 
@@ -47,10 +61,17 @@ class LEGENDSOFALDEN3_API AWeapon : public AItem
 		UPROPERTY(VisibleAnywhere)
 		USceneComponent* BoxTraceEnd;
 
+		UPROPERTY(EditDefaultsOnly)
+		EWeaponGripType GripType;
+
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		float Damage = 20.f;
 
 
 	public:
 		FORCEINLINE UBoxComponent* GetWeaponBox() const { return WeaponBox; }
+
+		UAnimMontage* GetLightAttackMontage() const { return LightAttackMontage; }
+		UAnimMontage* GetHeavyAttackMontage() const { return HeavyAttackMontage; }
+		EWeaponGripType GetGripType() const { return GripType; }
 };
