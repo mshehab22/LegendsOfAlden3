@@ -13,6 +13,7 @@
 class UAnimMontage;
 class UAttributeComponent;
 class UHealthBarComponent;
+class UPawnSensingComponent;
 
 UCLASS()
 class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
@@ -22,19 +23,48 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 	public:
 		AEnemy();
 		virtual void Tick(float DeltaTime) override;
+		void CheckPatrolTarget();
+		void CheckCombatTarget();
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 		virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 		void DirectionalHitReact(const FVector& ImpactPoint);
 		virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
+	protected:
+		virtual void BeginPlay() override;
+
+		void Die();
+		bool InTargetRange(AActor* Target, double Radius);
+		void MoveToTarget(AActor* Target);
+		AActor* ChoosePatrolTarget();
+
+		UFUNCTION()
+		void PawnSeen(APawn* SeenPawn);
+
+		// Play montage functions
+		void PlayHitReactMontage(const FName& SectionName);
+
+		UPROPERTY(BlueprintReadOnly)
+		EDeathPose DeathPose = EDeathPose::EDP_Alive;
+	
 	private:
+
+		/**
+		* Components
+		*/
+
 		UPROPERTY(VisibleAnywhere)
 		UAttributeComponent* Attributes;
 
 		UPROPERTY(VisibleAnywhere)
 		UHealthBarComponent* HealthBarWidget;
 
-		// Animation montages
+		UPROPERTY(VisibleAnywhere)
+		UPawnSensingComponent* PawnSensing;
+
+		/**
+		* Animation montages
+		*/ 
 		UPROPERTY(EditDefaultsOnly, Category = Montages)
 		UAnimMontage* HitReactMontage;
 
@@ -51,15 +81,16 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 		AActor* CombatTarget;
 
 		UPROPERTY(EditAnywhere)
-		double CombatRadius = 500.f;
+		double CombatRadius = 750.f;
 
+		UPROPERTY(EditAnywhere)
+		double AttackRadius = 150.f;
 		/**
 		* Navigation
 		*/
 
 		UPROPERTY()
 		class AAIController* EnemyController;
-
 
 		// Current patrol target
 		UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
@@ -71,19 +102,15 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 		UPROPERTY(EditAnywhere)
 		double PatrolRadius = 200.f;
 
-	protected:
-		virtual void BeginPlay() override;
+		FTimerHandle PatrolTimer;
+		void PatrolTimerFinished();
 
-		void Die();
-		bool InTargetRange(AActor* Target, double Radius);
+		//Patrol Wait time at target
+		UPROPERTY(EditAnywhere, Category = "AI Navigation")
+		float WaitMin = 5.f;
+		UPROPERTY(EditAnywhere, Category = "AI Navigation")
+		float WaitMax = 10.f;
+		/**/
 
-
-		// Play montage functions
-		void PlayHitReactMontage(const FName& SectionName);
-
-		UPROPERTY(BlueprintReadOnly)
-		EDeathPose DeathPose = EDeathPose::EDP_Alive;
-
-	public:
-
+		EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 };
