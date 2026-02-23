@@ -63,7 +63,6 @@ void AEnemy::BeginPlay()
 
 void AEnemy::Die()
 {
-	//TODO Play Death Montage
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && DeathMontage)
 	{
@@ -110,6 +109,7 @@ void AEnemy::Die()
 
 		AnimInstance->Montage_JumpToSection(SectionName, DeathMontage);
 	}
+
 	if (HealthBarWidget)
 	{
 		HealthBarWidget->SetVisibility(false);
@@ -117,7 +117,7 @@ void AEnemy::Die()
 	}
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetLifeSpan(3.f);
+	SetLifeSpan(100.f);
 }
 
 bool AEnemy::InTargetRange(AActor* Target, double Radius)

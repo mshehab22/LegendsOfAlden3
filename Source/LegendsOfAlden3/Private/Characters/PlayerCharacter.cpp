@@ -62,11 +62,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Look);
 
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APlayerCharacter::Jump);
 
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Interact);
 
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &APlayerCharacter::LightAttack);
 	}
 }
 
@@ -74,16 +74,30 @@ void APlayerCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type Collisi
 {
 	if (EquippedWeapon && (EquippedWeapon->GetWeaponBox()))
 	{
-		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled );
+		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
 		EquippedWeapon->IgnoreActors.Empty();
 	}
 }
 
 void APlayerCharacter::Movement(const FInputActionValue& Value)
 {
-	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+	if (!CanMove())
+	{
+		return;
+	}
 
 	const FVector2D Movement = Value.Get<FVector2D>();
+
+	if (!Movement.IsNearlyZero())
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			if (CurrentAttackMontage && AnimInstance->Montage_IsPlaying(CurrentAttackMontage))
+			{
+				AnimInstance->Montage_Stop(0.15f, CurrentAttackMontage); // small blend-out
+			}
+		}
+	}
 
 	const FRotator ControlRotation = GetControlRotation();
 	const FRotator YawRotation(0.0f, ControlRotation.Yaw, 0.0f);
@@ -106,6 +120,8 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Jump()
 {
+	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+
 	Super::Jump();
 }
 
@@ -114,9 +130,14 @@ void APlayerCharacter::Interact()
 	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingWeapon)
 	{
-		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-		CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
 		EquippedWeapon = OverlappingWeapon;
+		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+
+		CharacterState = 
+		EquippedWeapon->GetGripType() == EWeaponGripType::EWGT_TwoHanded ?
+		ECharacterState::ECS_EquippedTwoHandedWeapon :
+		ECharacterState::ECS_EquippedOneHandedWeapon;
+
 		OverlappingItem = nullptr;
 	}
 	else
@@ -130,7 +151,9 @@ void APlayerCharacter::Interact()
 		else if (CanArm())
 		{
 			PlayEquipMontage(FName("Equip"));
-			CharacterState = ECharacterState::ECS_EquippedOneHandedWeapon;
+			CharacterState = EquippedWeapon->GetGripType() == EWeaponGripType::EWGT_TwoHanded ? 
+															  ECharacterState::ECS_EquippedTwoHandedWeapon : 
+															  ECharacterState::ECS_EquippedOneHandedWeapon;
 			ActionState = EActionState::EAS_EquippingWeapon;
 		}
 	}
@@ -144,6 +167,11 @@ bool APlayerCharacter::CanDisarm()
 bool APlayerCharacter::CanArm()
 {
 	return (ActionState == EActionState::EAS_Unoccupied) && (CharacterState == ECharacterState::ECS_Unequipped) && EquippedWeapon;
+}
+
+bool APlayerCharacter::CanMove()
+{
+	return ActionState == EActionState::EAS_Unoccupied;
 }
 
 void APlayerCharacter::Disarm()
@@ -167,44 +195,73 @@ void APlayerCharacter::FinishEquipping()
 	ActionState = EActionState::EAS_Unoccupied;
 }
 
-void APlayerCharacter::Attack()
+void APlayerCharacter::EnableAttackBuffer()
 {
-	if (CanAttack())
+	bCanBufferAttack = true;
+}
+
+void APlayerCharacter::LightAttack()
+{
+	if (CanAttack() && EquippedWeapon)
 	{
-		PlayAttackMontage();
+		PlayAttackMontage(EquippedWeapon->GetLightAttackMontage());
 		ActionState = EActionState::EAS_Attacking;
+	}
+	else if ((ActionState == EActionState::EAS_Attacking) && bCanBufferAttack)
+	{
+		BufferedAttackType = EBufferedAttackType::EBAT_LightAttack;
 	}
 }
 
+void APlayerCharacter::HeavyAttack()
+{
+	if (CanAttack() && EquippedWeapon)
+	{
+		PlayAttackMontage(EquippedWeapon->GetHeavyAttackMontage());
+		ActionState = EActionState::EAS_Attacking;
+	}
+	else if ((ActionState == EActionState::EAS_Attacking) && bCanBufferAttack)
+	{
+		BufferedAttackType = EBufferedAttackType::EBAT_HeavyAttack;
+	}
+}
 
 bool APlayerCharacter::CanAttack()
 {
-	return (ActionState == EActionState::EAS_Unoccupied) && (CharacterState == ECharacterState::ECS_EquippedOneHandedWeapon);
+	return (ActionState == EActionState::EAS_Unoccupied) && (EquippedWeapon != nullptr);
 }
 
 
-void APlayerCharacter::PlayAttackMontage()
+void APlayerCharacter::PlayAttackMontage(UAnimMontage* MontageToPlay)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && AttackMontage)
-	{
-		AnimInstance->Montage_Play(AttackMontage);
-		const int32 Selection = FMath::RandRange(0, 1);
-		FName SectionName = FName();
+	if (!AnimInstance || !MontageToPlay) return;
 
-		switch (Selection)
+	CurrentAttackMontage = MontageToPlay;
+
+	AnimInstance->Montage_Play(MontageToPlay);
+
+	int32 NumberOfSections = MontageToPlay->CompositeSections.Num();
+	int32 Selection;
+
+	if (NumberOfSections <= 1) { Selection = 1; }
+	else
+	{
+		do
 		{
-		case 0:
-			SectionName = FName("Attack1");
-			break;
-		case 1:
-			SectionName = FName("Attack2");
-			break;
-		default:
-			break;
-		}
-		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
+			Selection = FMath::RandRange(1, NumberOfSections);
+
+		}while (Selection == LastAttackIndex);
 	}
+
+	LastAttackIndex = Selection;
+
+	FName SectionName = FName(*FString::Printf(TEXT("Attack%d"), Selection));
+
+	AnimInstance->Montage_JumpToSection(SectionName, MontageToPlay);
+
+	bCanBufferAttack = false;
+	bAttackBuffered = false;
 }
 
 void APlayerCharacter::PlayEquipMontage(const FName& SectionName)
@@ -220,5 +277,20 @@ void APlayerCharacter::PlayEquipMontage(const FName& SectionName)
 void APlayerCharacter::AttackEnd()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+
+	if (BufferedAttackType != EBufferedAttackType::EBAT_None)
+	{
+		EBufferedAttackType TypeToExecute = BufferedAttackType;
+		BufferedAttackType = EBufferedAttackType::EBAT_None;
+
+		if (TypeToExecute == EBufferedAttackType::EBAT_LightAttack)
+		{
+			LightAttack();
+		}
+		else if (TypeToExecute == EBufferedAttackType::EBAT_HeavyAttack)
+		{
+			HeavyAttack();
+		}
+	}
 }
 
