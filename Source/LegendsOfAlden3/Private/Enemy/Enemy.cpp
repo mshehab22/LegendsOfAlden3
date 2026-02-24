@@ -243,7 +243,6 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	if (Attributes && Attributes->IsAlive())
 	{
 		DirectionalHitReact(ImpactPoint);
-
 	}
 	else
 	{
