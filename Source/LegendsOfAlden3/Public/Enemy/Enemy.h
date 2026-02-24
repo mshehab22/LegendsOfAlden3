@@ -85,6 +85,7 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacter, public IHitInterface
 
 		UPROPERTY(EditAnywhere)
 		double AttackRadius = 150.f;
+
 		/**
 		* Navigation
 		*/
