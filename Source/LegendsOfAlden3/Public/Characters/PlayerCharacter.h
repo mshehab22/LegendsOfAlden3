@@ -11,8 +11,7 @@ class UInputAction;
 class USpringArmComponent;
 class UCameraComponent;
 class AItem;
-class UAnimMontage;
-class AWeapon;
+
 
 UCLASS()
 class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
@@ -25,9 +24,6 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		virtual void Tick(float DeltaTime) override;
 
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-		UFUNCTION(BlueprintCallable)
-		void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 		FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 		FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
@@ -51,7 +47,7 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		UInputAction* InteractAction;
 
 		UPROPERTY(EditAnywhere, Category = Input)
-		UInputAction* AttackAction;
+		UInputAction* LightAttackAction;
 
 		// Callbacks for input
 		void Movement(const FInputActionValue& Value);
@@ -62,33 +58,24 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		void Interact();
 
-		void LightAttack();
+		virtual void LightAttack() override;
 
-		void HeavyAttack();
+		virtual void HeavyAttack() override;
 
 		// Play montage functions
-		void PlayAttackMontage(UAnimMontage* MontageToPlay);
-		void PlayEquipMontage(const FName& SectionName);
+		virtual void PlayAttackMontage(UAnimMontage* MontageToPlay) override;
+		virtual void PlayEquipMontage(const FName& SectionName) override;
+		virtual void AttackEnd() override;
 
-		UFUNCTION(BlueprintCallable)
-		void AttackEnd();
+		virtual bool CanAttack() override;
 
-		bool CanAttack();
+		virtual bool CanDisarm()override;
 
-		bool CanDisarm();
+		virtual bool CanArm()override;
 
-		bool CanArm();
+		virtual bool CanMove()override;
 
-		bool CanMove();
-
-		UFUNCTION(BlueprintCallable)
-		void Disarm();
-
-		UFUNCTION(BlueprintCallable)
-		void Arm();
-
-		UFUNCTION(BlueprintCallable)
-		void FinishEquipping();
+		virtual void FinishEquipping()override;
 
 		UFUNCTION(BlueprintCallable)
 		void EnableAttackBuffer();
@@ -109,19 +96,10 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		UPROPERTY(VisibleInstanceOnly)
 		AItem* OverlappingItem;
-
-		UPROPERTY(VisibleAnywhere, Category = Weapon)
-		AWeapon* EquippedWeapon;
 		
 		UPROPERTY()
 		UAnimMontage* CurrentAttackMontage = nullptr;
 		
-		// Animation montages
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* AttackMontage;
-
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* EquipMontage;
 
 		bool bAttackBuffered = false;
 		bool bCanBufferAttack = false;

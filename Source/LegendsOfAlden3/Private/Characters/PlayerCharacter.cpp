@@ -66,18 +66,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Interact);
 
-		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Started, this, &APlayerCharacter::LightAttack);
+		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &APlayerCharacter::LightAttack);
 	}
 }
 
-void APlayerCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
-{
-	if (EquippedWeapon && (EquippedWeapon->GetWeaponBox()))
-	{
-		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
-		EquippedWeapon->IgnoreActors.Empty();
-	}
-}
+
 
 void APlayerCharacter::Movement(const FInputActionValue& Value)
 {
@@ -172,22 +165,6 @@ bool APlayerCharacter::CanArm()
 bool APlayerCharacter::CanMove()
 {
 	return ActionState == EActionState::EAS_Unoccupied;
-}
-
-void APlayerCharacter::Disarm()
-{
-	if (EquippedWeapon)
-	{
-		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("WeaponSocket"));
-	}
-}
-
-void APlayerCharacter::Arm()
-{
-	if (EquippedWeapon)
-	{
-		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
-	}
 }
 
 void APlayerCharacter::FinishEquipping()
