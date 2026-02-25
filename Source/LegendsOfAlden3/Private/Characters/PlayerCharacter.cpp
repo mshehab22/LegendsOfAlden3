@@ -125,9 +125,11 @@ void APlayerCharacter::Interact()
 		else if (CanArm())
 		{
 			PlayEquipMontage(FName("Equip"));
-			CharacterState = EquippedWeapon->GetGripType() == EWeaponGripType::EWGT_TwoHanded ? 
-															  ECharacterState::ECS_EquippedTwoHandedWeapon : 
-															  ECharacterState::ECS_EquippedOneHandedWeapon;
+			CharacterState = EquippedWeapon->GetGripType() ==
+				EWeaponGripType::EWGT_TwoHanded ? 
+			    ECharacterState::ECS_EquippedTwoHandedWeapon : 
+				ECharacterState::ECS_EquippedOneHandedWeapon;
+
 			ActionState = EActionState::EAS_EquippingWeapon;
 		}
 	}
