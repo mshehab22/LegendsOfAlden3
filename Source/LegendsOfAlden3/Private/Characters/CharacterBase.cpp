@@ -2,13 +2,15 @@
 #include "Components/BoxComponent.h"
 #include "Items/Weapons/Weapon.h"
 #include "Components/AttributeComponent.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ACharacterBase::ACharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
 void ACharacterBase::BeginPlay()
@@ -18,17 +20,28 @@ void ACharacterBase::BeginPlay()
 
 void ACharacterBase::LightAttack()
 {
-
+	if (EquippedWeapon)
+	{
+		PlayAttackMontage(EquippedWeapon->GetLightAttackMontage());
+	}
 }
 
 void ACharacterBase::HeavyAttack()
 {
-
+	if (EquippedWeapon)
+	{
+		PlayAttackMontage(EquippedWeapon->GetHeavyAttackMontage());
+	}
 }
 
 void ACharacterBase::Die()
 {
 
+}
+
+bool ACharacterBase::IsAlive()
+{
+	return Attributes && Attributes->IsAlive();
 }
 
 void ACharacterBase::PlayHitReactMontage(const FName& SectionName)
@@ -61,8 +74,6 @@ void ACharacterBase::DirectionalHitReact(const FVector& ImpactPoint)
 	{
 		Theta *= -1.f;
 	}
-	UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + CrossProduct * 100.f, 5.f, FColor::Red, 5.f);
-
 	FName Section("FromBack");
 
 	if (Theta >= -45.f && Theta < 45.f)
@@ -81,14 +92,83 @@ void ACharacterBase::DirectionalHitReact(const FVector& ImpactPoint)
 	PlayHitReactMontage(Section);
 }
 
-void ACharacterBase::PlayAttackMontage(UAnimMontage* MontageToPlay)
+void ACharacterBase::PlayHitSound(const FVector& ImpactPoint)
 {
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, ImpactPoint);
+	}
+}
 
+void ACharacterBase::SpawnHitParticles(const FVector& ImpactPoint)
+{
+	if (HitParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, ImpactPoint);
+	}
+}
+
+void ACharacterBase::HandleDamage(float DamageAmount)
+{
+	if (Attributes)
+	{
+		Attributes->ReceiveDamage(DamageAmount);
+
+	}
+}
+
+void ACharacterBase::PlayMontageSection(UAnimMontage* Montage, const FName& SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage);
+		AnimInstance->Montage_JumpToSection(SectionName, Montage);
+	}
+}
+
+void ACharacterBase::DisableCapsule()
+{
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+int32 ACharacterBase::PlayRandomMontageSection(UAnimMontage* Montage)
+{
+	if (Montage->GetNumSections() <= 0) return -1;
+	int32 NumberOfSections = Montage->GetNumSections();
+
+	int32 Selection;
+	do
+	{
+		Selection = FMath::RandRange(1, NumberOfSections);
+
+	} while (Selection == LastSelectionIndex);
+
+	LastSelectionIndex = Selection;
+	FName SectionName = Montage->GetSectionName(Selection);
+	PlayMontageSection(Montage, SectionName);
+
+	return Selection;
+}
+
+int32 ACharacterBase::PlayAttackMontage(UAnimMontage* Montage)
+{
+	return PlayRandomMontageSection(Montage);
+}
+
+int32 ACharacterBase::PlayDeathMontage()
+{
+	return PlayRandomMontageSection(DeathMontage);
 }
 
 void ACharacterBase::PlayEquipMontage(const FName& SectionName)
 {
-
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && EquipMontage)
+	{
+		AnimInstance->Montage_Play(EquipMontage);
+		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
+	}
 }
 void ACharacterBase::AttackEnd()
 {
@@ -115,7 +195,7 @@ bool ACharacterBase::CanMove()
 	return false;
 }
 
-void ACharacterBase::Disarm()
+void ACharacterBase::AttachWeaponToBack()
 {
 	if (EquippedWeapon)
 	{
@@ -123,7 +203,7 @@ void ACharacterBase::Disarm()
 	}
 }
 
-void ACharacterBase::Arm()
+void ACharacterBase::AttachWeaponToHand()
 {
 	if (EquippedWeapon)
 	{
@@ -135,6 +215,8 @@ void ACharacterBase::FinishEquipping()
 {
 
 }
+
+
 
 void ACharacterBase::Tick(float DeltaTime)
 {

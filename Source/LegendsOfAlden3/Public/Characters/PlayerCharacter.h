@@ -20,10 +20,10 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 	public:
 		APlayerCharacter();
-
-		virtual void Tick(float DeltaTime) override;
-
+		
+		/** <AActor> */
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+		/** </AActor> */
 
 		FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 		FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
@@ -31,6 +31,30 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 	protected:
 		virtual void BeginPlay() override;
 
+		// Callbacks for input
+		void Movement(const FInputActionValue& Value);
+		void Look(const FInputActionValue& Value);
+		virtual void Jump() override;
+		void Interact();
+		virtual void LightAttack() override;
+		virtual void HeavyAttack() override;
+
+		/** Combat */
+		void EquipWeapon(AWeapon* Weapon);
+		virtual void AttackEnd() override;
+		virtual bool CanAttack() override;
+		virtual bool CanDisarm() override;
+		virtual bool CanArm() override;
+		virtual bool CanMove() override;
+		virtual void FinishEquipping()override;
+		virtual int32 PlayAttackMontage(UAnimMontage* Montage) override;
+
+		UFUNCTION(BlueprintCallable)
+		void EnableAttackBuffer();
+
+	private:
+
+		/** Input Variables*/
 		UPROPERTY(EditAnywhere, Category = Input)
 		UInputMappingContext* PlayerCharacterMappingContext;
 
@@ -48,46 +72,9 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 
 		UPROPERTY(EditAnywhere, Category = Input)
 		UInputAction* LightAttackAction;
+		/** /Input Variables*/
 
-		// Callbacks for input
-		void Movement(const FInputActionValue& Value);
-
-		void Look(const FInputActionValue& Value);
-
-		virtual void Jump() override;
-
-		void Interact();
-
-		virtual void LightAttack() override;
-
-		virtual void HeavyAttack() override;
-
-		// Play montage functions
-		virtual void PlayAttackMontage(UAnimMontage* MontageToPlay) override;
-		virtual void PlayEquipMontage(const FName& SectionName) override;
-		virtual void AttackEnd() override;
-
-		virtual bool CanAttack() override;
-
-		virtual bool CanDisarm()override;
-
-		virtual bool CanArm()override;
-
-		virtual bool CanMove()override;
-
-		virtual void FinishEquipping()override;
-
-		UFUNCTION(BlueprintCallable)
-		void EnableAttackBuffer();
-
-	private:
-		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
-
-		EBufferedAttackType BufferedAttackType = EBufferedAttackType::EBAT_None;
-
-		UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-		EActionState ActionState = EActionState::EAS_Unoccupied;
-
+		/** Character Components */
 		UPROPERTY(VisibleAnywhere)
 		USpringArmComponent* CameraBoom;
 
@@ -100,9 +87,15 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		UPROPERTY()
 		UAnimMontage* CurrentAttackMontage = nullptr;
 		
-
 		bool bAttackBuffered = false;
 		bool bCanBufferAttack = false;
-		int32 LastAttackIndex = -1;
+
+		ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+
+		EBufferedAttackType BufferedAttackType = EBufferedAttackType::EBAT_None;
+
+		UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		EActionState ActionState = EActionState::EAS_Unoccupied;
+
 	
 };

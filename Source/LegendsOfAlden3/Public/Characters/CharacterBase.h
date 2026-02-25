@@ -15,52 +15,72 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 	GENERATED_BODY()
 
 	public:
+
 		ACharacterBase();
 		virtual void Tick(float DeltaTime) override;
 
-		UFUNCTION(BlueprintCallable)
-		void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
-
 	protected:
+
+		/** <AActor> */
 		virtual void BeginPlay() override;
+		/** </AActor> */
+
 		virtual void LightAttack();
 		virtual void HeavyAttack();
 		virtual void Die();
-
-		// Play montage functions
-		virtual void PlayAttackMontage(UAnimMontage* MontageToPlay);
-		virtual void PlayEquipMontage(const FName& SectionName);
-		void PlayHitReactMontage(const FName& SectionName);
 		void DirectionalHitReact(const FVector& ImpactPoint);
-		
-		UFUNCTION(BlueprintCallable)
-		virtual void AttackEnd();
-		
+
+		virtual void HandleDamage(float DamageAmount);
+		void PlayHitSound(const FVector& ImpactPoint);
+		void SpawnHitParticles(const FVector& ImpactPoint);
+		void DisableCapsule();
 		virtual bool CanAttack();
-
+		bool IsAlive();
 		virtual bool CanDisarm();
-
 		virtual bool CanArm();
-
 		virtual bool CanMove();
 
-		UFUNCTION(BlueprintCallable)
-		void Disarm();
+		/** Play montage functions */
+		void PlayHitReactMontage(const FName& SectionName);
+		virtual int32 PlayAttackMontage(UAnimMontage* Montage);
+		virtual int32 PlayDeathMontage();
+		void PlayEquipMontage(const FName& SectionName);
+		/** /Play montage functions */
 
 		UFUNCTION(BlueprintCallable)
-		void Arm();
+		virtual void AttackEnd();
+
+		UFUNCTION(BlueprintCallable)
+		void AttachWeaponToBack();
+
+		UFUNCTION(BlueprintCallable)
+		void AttachWeaponToHand();
 
 		UFUNCTION(BlueprintCallable)
 		virtual void FinishEquipping();
 
+		UFUNCTION(BlueprintCallable)
+		void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 		UPROPERTY(VisibleAnywhere, Category = Weapon)
 		AWeapon* EquippedWeapon;
 
-		// Animation montages
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* AttackMontage;
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+		UAttributeComponent* Attributes;
 
+		int32 LastSelectionIndex = -1;
+
+	private:
+		/** Play montage functions */
+		void PlayMontageSection(UAnimMontage* Montage, const FName& SectionName);
+		int32 PlayRandomMontageSection(UAnimMontage* Montage);
+
+		UPROPERTY(EditAnywhere, Category = Sounds)
+		USoundBase* HitSound;
+
+		UPROPERTY(EditAnywhere, Category = VisualEffects)
+		UParticleSystem* HitParticles;
+	
 		UPROPERTY(EditDefaultsOnly, Category = Montages)
 		UAnimMontage* EquipMontage;
 
@@ -69,20 +89,5 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 
 		UPROPERTY(EditDefaultsOnly, Category = Montages)
 		UAnimMontage* DeathMontage;
-
-		/**
-		* Components
-		*/
-		UPROPERTY(VisibleAnywhere)
-		UAttributeComponent* Attributes;
-
-		UPROPERTY(EditAnywhere, Category = Sounds)
-		USoundBase* HitSound;
-
-		UPROPERTY(EditAnywhere, Category = VisualEffects)
-		UParticleSystem* HitParticles;
-
-	private:	
-
 
 };

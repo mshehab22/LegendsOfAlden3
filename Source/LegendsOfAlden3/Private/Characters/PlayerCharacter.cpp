@@ -1,18 +1,15 @@
 #include "Characters/PlayerCharacter.h"
-#include "Components/InputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
-#include "Animation/AnimMontage.h"
-#include "Components/BoxComponent.h"
+
 
 APlayerCharacter::APlayerCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -29,27 +26,6 @@ APlayerCharacter::APlayerCharacter()
 	ViewCamera->SetupAttachment(CameraBoom);
 
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
-}
-
-void APlayerCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	Tags.Add(FName("AldenCharacter"));
-
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(PlayerCharacterMappingContext, 0);
-		}
-	}
-}
-
-void APlayerCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -70,7 +46,20 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	}
 }
 
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
 
+	Tags.Add(FName("AldenCharacter"));
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(PlayerCharacterMappingContext, 0);
+		}
+	}
+}
 
 void APlayerCharacter::Movement(const FInputActionValue& Value)
 {
@@ -123,15 +112,7 @@ void APlayerCharacter::Interact()
 	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingWeapon)
 	{
-		EquippedWeapon = OverlappingWeapon;
-		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
-
-		CharacterState = 
-		EquippedWeapon->GetGripType() == EWeaponGripType::EWGT_TwoHanded ?
-		ECharacterState::ECS_EquippedTwoHandedWeapon :
-		ECharacterState::ECS_EquippedOneHandedWeapon;
-
-		OverlappingItem = nullptr;
+		EquipWeapon(OverlappingWeapon);
 	}
 	else
 	{
@@ -150,6 +131,70 @@ void APlayerCharacter::Interact()
 			ActionState = EActionState::EAS_EquippingWeapon;
 		}
 	}
+}
+
+void APlayerCharacter::LightAttack()
+{
+	Super::LightAttack();
+
+	if (CanAttack())
+	{
+		ActionState = EActionState::EAS_Attacking;
+	}
+	else if ((ActionState == EActionState::EAS_Attacking) && bCanBufferAttack)
+	{
+		BufferedAttackType = EBufferedAttackType::EBAT_LightAttack;
+	}
+}
+
+void APlayerCharacter::HeavyAttack()
+{
+	Super::HeavyAttack();
+
+	if (CanAttack())
+	{
+		ActionState = EActionState::EAS_Attacking;
+	}
+	else if ((ActionState == EActionState::EAS_Attacking) && bCanBufferAttack)
+	{
+		BufferedAttackType = EBufferedAttackType::EBAT_HeavyAttack;
+	}
+}
+
+void APlayerCharacter::EquipWeapon(AWeapon* Weapon)
+{
+	EquippedWeapon = Weapon;
+	Weapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+	CharacterState =
+		EquippedWeapon->GetGripType() == EWeaponGripType::EWGT_TwoHanded ?
+		ECharacterState::ECS_EquippedTwoHandedWeapon :
+		ECharacterState::ECS_EquippedOneHandedWeapon;
+	OverlappingItem = nullptr;
+}
+
+void APlayerCharacter::AttackEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+
+	if (BufferedAttackType != EBufferedAttackType::EBAT_None)
+	{
+		EBufferedAttackType TypeToExecute = BufferedAttackType;
+		BufferedAttackType = EBufferedAttackType::EBAT_None;
+
+		if (TypeToExecute == EBufferedAttackType::EBAT_LightAttack)
+		{
+			LightAttack();
+		}
+		else if (TypeToExecute == EBufferedAttackType::EBAT_HeavyAttack)
+		{
+			HeavyAttack();
+		}
+	}
+}
+
+bool APlayerCharacter::CanAttack()
+{
+	return (ActionState == EActionState::EAS_Unoccupied) && (EquippedWeapon != nullptr);
 }
 
 bool APlayerCharacter::CanDisarm()
@@ -172,102 +217,16 @@ void APlayerCharacter::FinishEquipping()
 	ActionState = EActionState::EAS_Unoccupied;
 }
 
+int32 APlayerCharacter::PlayAttackMontage(UAnimMontage* Montage)
+{
+	const int32 Selection = Super::PlayAttackMontage(Montage);
+	bCanBufferAttack = false;
+	bAttackBuffered = false;
+	return Selection;
+}
+
 void APlayerCharacter::EnableAttackBuffer()
 {
 	bCanBufferAttack = true;
-}
-
-void APlayerCharacter::LightAttack()
-{
-	if (CanAttack() && EquippedWeapon)
-	{
-		PlayAttackMontage(EquippedWeapon->GetLightAttackMontage());
-		ActionState = EActionState::EAS_Attacking;
-	}
-	else if ((ActionState == EActionState::EAS_Attacking) && bCanBufferAttack)
-	{
-		BufferedAttackType = EBufferedAttackType::EBAT_LightAttack;
-	}
-}
-
-void APlayerCharacter::HeavyAttack()
-{
-	if (CanAttack() && EquippedWeapon)
-	{
-		PlayAttackMontage(EquippedWeapon->GetHeavyAttackMontage());
-		ActionState = EActionState::EAS_Attacking;
-	}
-	else if ((ActionState == EActionState::EAS_Attacking) && bCanBufferAttack)
-	{
-		BufferedAttackType = EBufferedAttackType::EBAT_HeavyAttack;
-	}
-}
-
-bool APlayerCharacter::CanAttack()
-{
-	return (ActionState == EActionState::EAS_Unoccupied) && (EquippedWeapon != nullptr);
-}
-
-
-void APlayerCharacter::PlayAttackMontage(UAnimMontage* MontageToPlay)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (!AnimInstance || !MontageToPlay) return;
-
-	CurrentAttackMontage = MontageToPlay;
-
-	AnimInstance->Montage_Play(MontageToPlay);
-
-	int32 NumberOfSections = MontageToPlay->CompositeSections.Num();
-	int32 Selection;
-
-	if (NumberOfSections <= 1) { Selection = 1; }
-	else
-	{
-		do
-		{
-			Selection = FMath::RandRange(1, NumberOfSections);
-
-		}while (Selection == LastAttackIndex);
-	}
-
-	LastAttackIndex = Selection;
-
-	FName SectionName = FName(*FString::Printf(TEXT("Attack%d"), Selection));
-
-	AnimInstance->Montage_JumpToSection(SectionName, MontageToPlay);
-
-	bCanBufferAttack = false;
-	bAttackBuffered = false;
-}
-
-void APlayerCharacter::PlayEquipMontage(const FName& SectionName)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && EquipMontage)
-	{
-		AnimInstance->Montage_Play(EquipMontage);
-		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
-	}
-}
-
-void APlayerCharacter::AttackEnd()
-{
-	ActionState = EActionState::EAS_Unoccupied;
-
-	if (BufferedAttackType != EBufferedAttackType::EBAT_None)
-	{
-		EBufferedAttackType TypeToExecute = BufferedAttackType;
-		BufferedAttackType = EBufferedAttackType::EBAT_None;
-
-		if (TypeToExecute == EBufferedAttackType::EBAT_LightAttack)
-		{
-			LightAttack();
-		}
-		else if (TypeToExecute == EBufferedAttackType::EBAT_HeavyAttack)
-		{
-			HeavyAttack();
-		}
-	}
 }
 
