@@ -15,74 +15,94 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 	GENERATED_BODY()
 
 	public:
+
 		ACharacterBase();
 		virtual void Tick(float DeltaTime) override;
 
-		UFUNCTION(BlueprintCallable)
-		void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
-
 	protected:
+
+		/** <AActor> */
 		virtual void BeginPlay() override;
+		virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
+		/** </AActor> */
+
+		/** Cambat */
 		virtual void LightAttack();
 		virtual void HeavyAttack();
 		virtual void Die();
-
-		// Play montage functions
-		virtual void PlayAttackMontage(UAnimMontage* MontageToPlay);
-		virtual void PlayEquipMontage(const FName& SectionName);
-		void PlayHitReactMontage(const FName& SectionName);
 		void DirectionalHitReact(const FVector& ImpactPoint);
-		
-		UFUNCTION(BlueprintCallable)
-		virtual void AttackEnd();
-		
+		virtual void HandleDamage(float DamageAmount);
+		void PlayHitSound(const FVector& ImpactPoint);
+		void SpawnHitParticles(const FVector& ImpactPoint);
+		void DisableCapsule();
 		virtual bool CanAttack();
-
+		bool IsAlive();
 		virtual bool CanDisarm();
-
 		virtual bool CanArm();
-
 		virtual bool CanMove();
 
-		UFUNCTION(BlueprintCallable)
-		void Disarm();
+		/** Play montage functions */
+		void PlayHitReactMontage(const FName& SectionName);
+		virtual int32 PlayAttackMontage(UAnimMontage* Montage);
+		virtual int32 PlayDeathMontage();
+		void PlayEquipMontage(const FName& SectionName);
+		void StopAttackMontage();
 
 		UFUNCTION(BlueprintCallable)
-		void Arm();
+		FVector GetTranslationWarpTarget();
+		
+		UFUNCTION(BlueprintCallable)
+		FVector GetRotationWarpTarget();
+
+		/** /Play montage functions */
+
+		UFUNCTION(BlueprintCallable)
+		virtual void AttackEnd(); 
+
+		UFUNCTION(BlueprintCallable)
+		void AttachWeaponToBack();
+
+		UFUNCTION(BlueprintCallable)
+		void AttachWeaponToHand();
 
 		UFUNCTION(BlueprintCallable)
 		virtual void FinishEquipping();
 
+		UFUNCTION(BlueprintCallable)
+		void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 		UPROPERTY(VisibleAnywhere, Category = Weapon)
 		AWeapon* EquippedWeapon;
 
-		// Animation montages
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* AttackMontage;
-
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* EquipMontage;
-
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* HitReactMontage;
-
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
-		UAnimMontage* DeathMontage;
-
-		/**
-		* Components
-		*/
-		UPROPERTY(VisibleAnywhere)
+		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UAttributeComponent* Attributes;
 
-		UPROPERTY(EditAnywhere, Category = Sounds)
+		UPROPERTY(BlueprintReadOnly, Category = "Combat")
+		AActor* CombatTarget;
+
+		UPROPERTY(EditAnywhere, Category = "Combat")
+		double WarpTargetDistance = 75.f;
+
+		int32 LastSelectionIndex = -1;
+
+	private:
+		/** Play montage functions */
+		void PlayMontageSection(UAnimMontage* Montage, const FName& SectionName);
+		int32 PlayRandomMontageSection(UAnimMontage* Montage);
+
+		UPROPERTY(EditAnywhere, Category = Combat)
 		USoundBase* HitSound;
 
-		UPROPERTY(EditAnywhere, Category = VisualEffects)
+		UPROPERTY(EditAnywhere, Category = Combat)
 		UParticleSystem* HitParticles;
+	
+		UPROPERTY(EditDefaultsOnly, Category = Combat)
+		UAnimMontage* EquipMontage;
 
-	private:	
+		UPROPERTY(EditDefaultsOnly, Category = Combat)
+		UAnimMontage* HitReactMontage;
 
+		UPROPERTY(EditDefaultsOnly, Category = Combat)
+		UAnimMontage* DeathMontage;
 
 };
