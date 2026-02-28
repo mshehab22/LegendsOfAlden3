@@ -23,13 +23,14 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 
 		/** <AActor> */
 		virtual void BeginPlay() override;
+		virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 		/** </AActor> */
 
+		/** Cambat */
 		virtual void LightAttack();
 		virtual void HeavyAttack();
 		virtual void Die();
 		void DirectionalHitReact(const FVector& ImpactPoint);
-
 		virtual void HandleDamage(float DamageAmount);
 		void PlayHitSound(const FVector& ImpactPoint);
 		void SpawnHitParticles(const FVector& ImpactPoint);
@@ -45,10 +46,18 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 		virtual int32 PlayAttackMontage(UAnimMontage* Montage);
 		virtual int32 PlayDeathMontage();
 		void PlayEquipMontage(const FName& SectionName);
+		void StopAttackMontage();
+
+		UFUNCTION(BlueprintCallable)
+		FVector GetTranslationWarpTarget();
+		
+		UFUNCTION(BlueprintCallable)
+		FVector GetRotationWarpTarget();
+
 		/** /Play montage functions */
 
 		UFUNCTION(BlueprintCallable)
-		virtual void AttackEnd();
+		virtual void AttackEnd(); 
 
 		UFUNCTION(BlueprintCallable)
 		void AttachWeaponToBack();
@@ -68,6 +77,12 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 		UAttributeComponent* Attributes;
 
+		UPROPERTY(BlueprintReadOnly, Category = "Combat")
+		AActor* CombatTarget;
+
+		UPROPERTY(EditAnywhere, Category = "Combat")
+		double WarpTargetDistance = 75.f;
+
 		int32 LastSelectionIndex = -1;
 
 	private:
@@ -75,19 +90,19 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 		void PlayMontageSection(UAnimMontage* Montage, const FName& SectionName);
 		int32 PlayRandomMontageSection(UAnimMontage* Montage);
 
-		UPROPERTY(EditAnywhere, Category = Sounds)
+		UPROPERTY(EditAnywhere, Category = Combat)
 		USoundBase* HitSound;
 
-		UPROPERTY(EditAnywhere, Category = VisualEffects)
+		UPROPERTY(EditAnywhere, Category = Combat)
 		UParticleSystem* HitParticles;
 	
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
+		UPROPERTY(EditDefaultsOnly, Category = Combat)
 		UAnimMontage* EquipMontage;
 
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
+		UPROPERTY(EditDefaultsOnly, Category = Combat)
 		UAnimMontage* HitReactMontage;
 
-		UPROPERTY(EditDefaultsOnly, Category = Montages)
+		UPROPERTY(EditDefaultsOnly, Category = Combat)
 		UAnimMontage* DeathMontage;
 
 };

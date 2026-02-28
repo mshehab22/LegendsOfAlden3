@@ -25,6 +25,10 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 		/** </AActor> */
 
+		/** <IHitInterface> */
+		virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
+		/** </IHitInterface> */
+
 		FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 		FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
@@ -45,12 +49,17 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase
 		virtual bool CanAttack() override;
 		virtual bool CanDisarm() override;
 		virtual bool CanArm() override;
+		void Disarm();
+		void Arm();
 		virtual bool CanMove() override;
 		virtual void FinishEquipping()override;
 		virtual int32 PlayAttackMontage(UAnimMontage* Montage) override;
 
 		UFUNCTION(BlueprintCallable)
 		void EnableAttackBuffer();
+
+		UFUNCTION(BlueprintCallable)
+		void HitReactEnd();
 
 	private:
 

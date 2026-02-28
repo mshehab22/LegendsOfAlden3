@@ -13,9 +13,26 @@ ACharacterBase::ACharacterBase()
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
+void ACharacterBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();	
+}
+
+void ACharacterBase::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
+{
+	if (IsAlive() && Hitter)
+	{
+		DirectionalHitReact(Hitter->GetActorLocation());
+	}
+	else Die();
+
+	PlayHitSound(ImpactPoint);
+	SpawnHitParticles(ImpactPoint);
 }
 
 void ACharacterBase::LightAttack()
@@ -37,21 +54,6 @@ void ACharacterBase::HeavyAttack()
 void ACharacterBase::Die()
 {
 
-}
-
-bool ACharacterBase::IsAlive()
-{
-	return Attributes && Attributes->IsAlive();
-}
-
-void ACharacterBase::PlayHitReactMontage(const FName& SectionName)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && HitReactMontage)
-	{
-		AnimInstance->Montage_Play(HitReactMontage);
-		AnimInstance->Montage_JumpToSection(SectionName, HitReactMontage);
-	}
 }
 
 void ACharacterBase::DirectionalHitReact(const FVector& ImpactPoint)
@@ -92,6 +94,15 @@ void ACharacterBase::DirectionalHitReact(const FVector& ImpactPoint)
 	PlayHitReactMontage(Section);
 }
 
+void ACharacterBase::HandleDamage(float DamageAmount)
+{
+	if (Attributes)
+	{
+		Attributes->ReceiveDamage(DamageAmount);
+
+	}
+}
+
 void ACharacterBase::PlayHitSound(const FVector& ImpactPoint)
 {
 	if (HitSound)
@@ -108,47 +119,44 @@ void ACharacterBase::SpawnHitParticles(const FVector& ImpactPoint)
 	}
 }
 
-void ACharacterBase::HandleDamage(float DamageAmount)
-{
-	if (Attributes)
-	{
-		Attributes->ReceiveDamage(DamageAmount);
-
-	}
-}
-
-void ACharacterBase::PlayMontageSection(UAnimMontage* Montage, const FName& SectionName)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && Montage)
-	{
-		AnimInstance->Montage_Play(Montage);
-		AnimInstance->Montage_JumpToSection(SectionName, Montage);
-	}
-}
-
 void ACharacterBase::DisableCapsule()
 {
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-int32 ACharacterBase::PlayRandomMontageSection(UAnimMontage* Montage)
+bool ACharacterBase::CanAttack()
 {
-	if (Montage->GetNumSections() <= 0) return -1;
-	int32 NumberOfSections = Montage->GetNumSections();
+	return false;
+}
 
-	int32 Selection;
-	do
+bool ACharacterBase::IsAlive()
+{
+	return Attributes && Attributes->IsAlive();
+}
+
+bool ACharacterBase::CanDisarm()
+{
+	return false;
+}
+
+bool ACharacterBase::CanArm()
+{
+	return false;
+}
+
+bool ACharacterBase::CanMove()
+{
+	return false;
+}
+
+void ACharacterBase::PlayHitReactMontage(const FName& SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HitReactMontage)
 	{
-		Selection = FMath::RandRange(1, NumberOfSections);
-
-	} while (Selection == LastSelectionIndex);
-
-	LastSelectionIndex = Selection;
-	FName SectionName = Montage->GetSectionName(Selection);
-	PlayMontageSection(Montage, SectionName);
-
-	return Selection;
+		AnimInstance->Montage_Play(HitReactMontage);
+		AnimInstance->Montage_JumpToSection(SectionName, HitReactMontage);
+	}
 }
 
 int32 ACharacterBase::PlayAttackMontage(UAnimMontage* Montage)
@@ -170,29 +178,41 @@ void ACharacterBase::PlayEquipMontage(const FName& SectionName)
 		AnimInstance->Montage_JumpToSection(SectionName, EquipMontage);
 	}
 }
+
+void ACharacterBase::StopAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Stop(0.25f, EquippedWeapon->GetLightAttackMontage());
+	}
+}
+
+FVector ACharacterBase::GetTranslationWarpTarget()
+{
+	if (CombatTarget == nullptr) return FVector();
+
+	const FVector CombatTargetLocation = CombatTarget->GetActorLocation();
+	const FVector Location = GetActorLocation();
+
+	FVector TargetToMe = (Location - CombatTargetLocation).GetSafeNormal();
+	TargetToMe *= WarpTargetDistance;
+
+	return CombatTargetLocation + TargetToMe;
+}
+
+FVector ACharacterBase::GetRotationWarpTarget()
+{
+	if (CombatTarget)
+	{
+		return CombatTarget->GetActorLocation();
+	}
+	return FVector();
+}
+
 void ACharacterBase::AttackEnd()
 {
 
-}
-
-bool ACharacterBase::CanAttack()
-{
-	return false;
-}
-
-bool ACharacterBase::CanDisarm()
-{
-	return false;
-}
-
-bool ACharacterBase::CanArm()
-{
-	return false;
-}
-
-bool ACharacterBase::CanMove()
-{
-	return false;
 }
 
 void ACharacterBase::AttachWeaponToBack()
@@ -216,14 +236,6 @@ void ACharacterBase::FinishEquipping()
 
 }
 
-
-
-void ACharacterBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 void ACharacterBase::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
 	if (EquippedWeapon && (EquippedWeapon->GetWeaponBox()))
@@ -232,6 +244,38 @@ void ACharacterBase::SetWeaponCollisionEnabled(ECollisionEnabled::Type Collision
 		EquippedWeapon->IgnoreActors.Empty();
 	}
 }
+
+void ACharacterBase::PlayMontageSection(UAnimMontage* Montage, const FName& SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage);
+		AnimInstance->Montage_JumpToSection(SectionName, Montage);
+	}
+}
+
+int32 ACharacterBase::PlayRandomMontageSection(UAnimMontage* Montage)
+{
+	if (Montage->GetNumSections() <= 0) return -1;
+	int32 NumberOfSections = Montage->GetNumSections();
+
+	int32 Selection;
+	do
+	{
+		Selection = FMath::RandRange(1, NumberOfSections);
+
+	} while (Selection == LastSelectionIndex);
+
+	LastSelectionIndex = Selection;
+	FName SectionName = Montage->GetSectionName(Selection);
+	PlayMontageSection(Montage, SectionName);
+
+	return Selection;
+}
+
+
+
 
 
 

@@ -2,6 +2,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Items/Weapons/Weapon.h"
@@ -17,6 +18,12 @@ APlayerCharacter::APlayerCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 400.0f, 0.0f);
+
+	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+	GetMesh()->SetGenerateOverlapEvents(true);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
@@ -46,11 +53,18 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	}
 }
 
+void APlayerCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
+{
+	Super::GetHit_Implementation(ImpactPoint, Hitter);
+	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
+	ActionState = EActionState::EAS_HitReaction;
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Tags.Add(FName("AldenCharacter"));
+	Tags.Add(FName("EngageableTarget"));
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -118,19 +132,11 @@ void APlayerCharacter::Interact()
 	{
 		if (CanDisarm())
 		{
-			PlayEquipMontage(FName("Unequip"));
-			CharacterState = ECharacterState::ECS_Unequipped;
-			ActionState = EActionState::EAS_EquippingWeapon;
+			Disarm();
 		}
 		else if (CanArm())
 		{
-			PlayEquipMontage(FName("Equip"));
-			CharacterState = EquippedWeapon->GetGripType() ==
-				EWeaponGripType::EWGT_TwoHanded ? 
-			    ECharacterState::ECS_EquippedTwoHandedWeapon : 
-				ECharacterState::ECS_EquippedOneHandedWeapon;
-
-			ActionState = EActionState::EAS_EquippingWeapon;
+			Arm();
 		}
 	}
 }
@@ -177,7 +183,6 @@ void APlayerCharacter::EquipWeapon(AWeapon* Weapon)
 void APlayerCharacter::AttackEnd()
 {
 	ActionState = EActionState::EAS_Unoccupied;
-
 	if (BufferedAttackType != EBufferedAttackType::EBAT_None)
 	{
 		EBufferedAttackType TypeToExecute = BufferedAttackType;
@@ -209,6 +214,23 @@ bool APlayerCharacter::CanArm()
 	return (ActionState == EActionState::EAS_Unoccupied) && (CharacterState == ECharacterState::ECS_Unequipped) && EquippedWeapon;
 }
 
+void APlayerCharacter::Disarm()
+{
+	PlayEquipMontage(FName("Unequip"));
+	CharacterState = ECharacterState::ECS_Unequipped;
+	ActionState = EActionState::EAS_EquippingWeapon;
+}
+
+void APlayerCharacter::Arm()
+{
+	PlayEquipMontage(FName("Equip"));
+	CharacterState = EquippedWeapon->GetGripType() ==
+		EWeaponGripType::EWGT_TwoHanded ?
+		ECharacterState::ECS_EquippedTwoHandedWeapon :
+		ECharacterState::ECS_EquippedOneHandedWeapon;
+	ActionState = EActionState::EAS_EquippingWeapon;
+}
+
 bool APlayerCharacter::CanMove()
 {
 	return ActionState == EActionState::EAS_Unoccupied;
@@ -230,5 +252,10 @@ int32 APlayerCharacter::PlayAttackMontage(UAnimMontage* Montage)
 void APlayerCharacter::EnableAttackBuffer()
 {
 	bCanBufferAttack = true;
+}
+
+void APlayerCharacter::HitReactEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied; 
 }
 

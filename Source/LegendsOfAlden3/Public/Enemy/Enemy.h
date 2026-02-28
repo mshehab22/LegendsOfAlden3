@@ -5,10 +5,11 @@
 #include "CoreMinimal.h"
 #include "Characters/CharacterBase.h"
 #include "Characters/CharacterTypes.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "Enemy.generated.h"
 
 class UHealthBarComponent;
-class UPawnSensingComponent;
+class UAIPerceptionComponent;
 class AWeapon;
 
 UCLASS()
@@ -26,7 +27,7 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		/** </AActor> */
 
 		/** <IHitInterface> */
-		virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+		virtual void GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter) override;
 		/** </IHitInterface> */
 
 	protected:
@@ -38,7 +39,7 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		/** <ABaseCharacter> */
 		virtual void Die() override;
 		virtual void LightAttack() override;
-		virtual void HeavyAttack() override;
+		//virtual void HeavyAttack() override;
 		virtual bool CanAttack() override;
 		virtual void AttackEnd() override;
 		virtual void HandleDamage(float DamageAmount) override;
@@ -47,7 +48,6 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		virtual int32 PlayDeathMontage() override;
 		virtual bool CanDisarm() override;
 		virtual bool CanArm() override;
-		virtual bool CanMove() override;
 		/** </ABaseCharacter> */
 
 		UPROPERTY(BlueprintReadOnly)
@@ -58,6 +58,10 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		
 		UPROPERTY(BlueprintReadOnly)
 		ECharacterState WeaponType = ECharacterState::ECS_Unequipped;
+
+		UPROPERTY(BlueprintReadOnly)
+		EEnemyMovement EnemyMovement = EEnemyMovement::EEM_CanMove;
+
 	private:
 
 		/** AI Behavior*/
@@ -66,10 +70,15 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		void SpawnDefaultWeapon();
 		void HideHealthBar();
 		void ShowHealthBar();
+		void EquipWeapon();
+		void UnequipWeapon();
 		bool IsChasing();
 		bool IsAttacking();
 		bool IsDead();
 		bool IsEngaged();
+		bool IsWeaponInHand();
+		bool CanMove();
+
 		/** Patrol */
 		void CheckPatrolTarget();
 		void PatrolTimerFinished();
@@ -80,7 +89,7 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		void CheckCombatTarget();
 		void LoseInterest();
 		void ChaseTarget();
-		void Attack();
+		//void Attack();
 		void StartAttackTimer();
 		void ClearAttackTimer();
 		bool IsOutsideCombatRadius();
@@ -89,21 +98,19 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		bool InTargetRange(AActor* Target, double Radius);
 
 		UFUNCTION()
-		void PawnSeen(APawn* SeenPawn); // Callback for OnPawnSeen in UPawnSeningComponent
+		void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus); // Callback for OnTargetPerceptionUpdated in UAIPerceptionComponent
 
 		/** Components */
 		UPROPERTY(VisibleAnywhere)
 		UHealthBarComponent* HealthBarWidget;
 
 		UPROPERTY(VisibleAnywhere)
-		UPawnSensingComponent* PawnSensing;
+		UAIPerceptionComponent* AIPerception;
 
 		UPROPERTY(EditAnywhere)
 		TSubclassOf<class AWeapon> WeaponClass;
 
 		/** Animation montages */
-		UPROPERTY()
-		AActor* CombatTarget;
 
 		UPROPERTY(EditAnywhere)
 		double CombatRadius = 1000.f;
@@ -148,5 +155,8 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 
 		UPROPERTY(EditAnywhere, Category = "Combat")
 		float DeathLifeSpan = 50.f;
+
+		UPROPERTY()
+		bool bIsWeaponInHand = false;
 };
 

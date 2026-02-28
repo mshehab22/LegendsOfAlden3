@@ -2,7 +2,8 @@
 #include "AIController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Perception/PawnSensingComponent.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISenseConfig_Sight.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/AttributeComponent.h"
 #include "HUD/HealthBarComponent.h"
@@ -26,9 +27,16 @@ AEnemy::AEnemy()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	PawnSensing = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensing"));
-	PawnSensing->SightRadius = 4000.f;
-	PawnSensing->SetPeripheralVisionAngle(45.f);
+	AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
+	UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+	SightConfig->SightRadius = 4000.f;
+	SightConfig->LoseSightRadius = 4500.f;
+	SightConfig->PeripheralVisionAngleDegrees = 45.f;
+	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	AIPerception->ConfigureSense(*SightConfig);
+	AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 }
 
 void AEnemy::Tick(float DeltaTime)
@@ -51,7 +59,16 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 {
 	HandleDamage(DamageAmount);
 	CombatTarget = EventInstigator->GetPawn();
-	ChaseTarget();
+	
+	if (IsInsideAttackRadius())
+	{
+		EnemyState = EEnemyState::EES_Attacking;
+	}
+	else if (IsOutsideAttackRadius())
+	{
+		ChaseTarget();
+	}
+
 	return DamageAmount;
 }
 
@@ -63,25 +80,24 @@ void AEnemy::Destroyed()
 	}
 }
 
-void AEnemy::GetHit_Implementation(const FVector& ImpactPoint)
+void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
 {
-	ShowHealthBar();
-
-	if (IsAlive())
-	{
-		DirectionalHitReact(ImpactPoint);
-	}
-	else Die();
-
-	PlayHitSound(ImpactPoint);
-	SpawnHitParticles(ImpactPoint);
+	Super::GetHit_Implementation(ImpactPoint, Hitter);
+	if (!IsDead())ShowHealthBar();
+	if (!IsWeaponInHand()) EquipWeapon();
+	ClearPatrolTimer();
+	ClearAttackTimer();
+	StopAttackMontage();
+	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	if (PawnSensing) PawnSensing->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
 	InitializeEnemy();
+	if (AIPerception) AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemy::OnPerceptionUpdated);
+	Tags.Add(FName("Enemy"));
+
 }
 
 void AEnemy::Die()
@@ -93,6 +109,7 @@ void AEnemy::Die()
 	DisableCapsule();
 	SetLifeSpan(DeathLifeSpan);
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AEnemy::LightAttack()
@@ -100,14 +117,15 @@ void AEnemy::LightAttack()
 	Super::LightAttack();
 }
 
-void AEnemy::HeavyAttack()
-{
-	Super::HeavyAttack();
-}
+//void AEnemy::HeavyAttack()
+//{
+//	Super::HeavyAttack();
+//}
 
 bool AEnemy::CanAttack()
 {
 	bool bCanAttack =
+		IsWeaponInHand() &&
 		IsInsideAttackRadius() &&
 		!IsAttacking() &&
 		!IsEngaged() &&
@@ -133,7 +151,18 @@ void AEnemy::HandleDamage(float DamageAmount)
 
 void AEnemy::FinishEquipping()
 {
-	EnemyState = EEnemyState::EES_NoState;
+	EnemyMovement = EEnemyMovement::EEM_CanMove;
+	if (IsWeaponInHand())
+	{
+		WeaponType = ECharacterState::ECS_Unequipped;
+		StartPatrolling();
+	}
+	else if (!IsWeaponInHand())
+	{
+		WeaponType = ECharacterState::ECS_EquippedOneHandedWeapon;
+		ChaseTarget();
+	}
+
 }
 
 int32 AEnemy::PlayAttackMontage(UAnimMontage* Montage)
@@ -156,17 +185,12 @@ int32 AEnemy::PlayDeathMontage()
 
 bool AEnemy::CanDisarm()
 {
-	return (EnemyState == EEnemyState::EES_Patrolling && WeaponType != ECharacterState::ECS_Unequipped);
+	return (EnemyState >= EEnemyState::EES_Chasing && WeaponType == ECharacterState::ECS_EquippedOneHandedWeapon);
 }
 
 bool AEnemy::CanArm()
 {
-	return (EnemyState >= EEnemyState::EES_Chasing && WeaponType == ECharacterState::ECS_Unequipped);
-}
-
-bool AEnemy::CanMove()
-{
-	return 	EnemyState == EEnemyState::EES_NoState;
+	return (EnemyState == EEnemyState::EES_Patrolling && WeaponType == ECharacterState::ECS_Unequipped);
 }
 
 void AEnemy::InitializeEnemy()
@@ -213,6 +237,24 @@ void AEnemy::ShowHealthBar()
 	}
 }
 
+void AEnemy::EquipWeapon()
+{
+	if (CanArm())
+	{
+		EnemyMovement = EEnemyMovement::EEM_CannotMove;
+		PlayEquipMontage(FName("Equip"));
+	}
+}
+
+void AEnemy::UnequipWeapon()
+{
+	if (CanDisarm())
+	{
+		EnemyMovement = EEnemyMovement::EEM_CannotMove;
+		PlayEquipMontage(FName("Unequip"));
+	}
+}
+
 bool AEnemy::IsChasing()
 {
 	return EnemyState == EEnemyState::EES_Chasing;
@@ -233,9 +275,19 @@ bool AEnemy::IsEngaged()
 	return EnemyState == EEnemyState::EES_Engaged;
 }
 
+bool AEnemy::IsWeaponInHand()
+{
+	return WeaponType == ECharacterState::ECS_EquippedOneHandedWeapon;
+}
+
+bool AEnemy::CanMove()
+{
+	return 	EnemyMovement == EEnemyMovement::EEM_CanMove;
+}
+
 void AEnemy::CheckPatrolTarget()
 {
-	if (InTargetRange(PatrolTarget, PatrolRadius))
+	if (InTargetRange(PatrolTarget, PatrolRadius) || !PatrolTarget)
 	{
 		PatrolTarget = ChoosePatrolTarget();
 		const float WaitTime = FMath::RandRange(PatrolWaitMin, PatrolWaitMax);
@@ -250,9 +302,20 @@ void AEnemy::PatrolTimerFinished()
 
 void AEnemy::StartPatrolling()
 {
-	EnemyState = EEnemyState::EES_Patrolling;
-	GetCharacterMovement()->MaxWalkSpeed = PatrollingSpeed;
-	MoveToTarget(PatrolTarget);
+	if (IsWeaponInHand())
+	{
+		if(CanMove()) UnequipWeapon();
+		return;
+	}
+
+	if (CanMove())
+	{
+		EnemyState = EEnemyState::EES_Patrolling;
+		CheckPatrolTarget();
+		GetCharacterMovement()->MaxWalkSpeed = PatrollingSpeed;
+		MoveToTarget(PatrolTarget);
+	}
+
 }
 
 void AEnemy::ClearPatrolTimer()
@@ -290,11 +353,6 @@ void AEnemy::CheckCombatTarget()
 		{
 			StartPatrolling();
 		}
-		if (CanDisarm())
-		{
-			PlayEquipMontage(FName("Unequip"));
-			WeaponType = ECharacterState::ECS_Unequipped;
-		}
 	}
 
 	else if (IsOutsideAttackRadius() && !IsChasing())
@@ -320,38 +378,41 @@ void AEnemy::LoseInterest()
 
 void AEnemy::ChaseTarget()
 {
-	EnemyState = EEnemyState::EES_Chasing;
-	GetCharacterMovement()->MaxWalkSpeed = ChasingSpeed;
-	MoveToTarget(CombatTarget);
-	if (CanArm())
+	if (!IsWeaponInHand())
 	{
-		PlayEquipMontage(FName("Equip"));
-		WeaponType = ECharacterState::ECS_EquippedOneHandedWeapon;
+		if (CanMove()) EquipWeapon();
+		return;
+	}
+	if (CanMove())
+	{
+		EnemyState = EEnemyState::EES_Chasing;
+		GetCharacterMovement()->MaxWalkSpeed = ChasingSpeed;
+		MoveToTarget(CombatTarget);
 	}
 }
 
-void AEnemy::Attack()
-{
-	EnemyState = EEnemyState::EES_Engaged;
-	const int AttackType = FMath::RandRange(0, 0); //change to 1 when heavy attack is added
-
-	switch (AttackType)
-	{
-	case 0:
-		LightAttack();
-		break;
-
-		//case 1:
-		//	HeavyAttack();
-		//	break;
-	}
-}
+//void AEnemy::Attack()
+//{
+//	EnemyState = EEnemyState::EES_Engaged;
+//	const int AttackType = FMath::RandRange(0, 1);
+//
+//	switch (AttackType)
+//	{
+//	case 0:
+//		LightAttack();
+//		break;
+//
+//	case 1:
+//		HeavyAttack();
+//		break;
+//	}
+//}
 
 void AEnemy::StartAttackTimer()
 {
 	EnemyState = EEnemyState::EES_Attacking;
 	const float AttackTime = FMath::RandRange(AttackMin, AttackMax);
-	GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
+	GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::LightAttack, AttackTime);
 
 }
 
@@ -382,13 +443,16 @@ bool AEnemy::InTargetRange(AActor* Target, double Radius)
 	return DistanceToTarget <= Radius;
 }
 
-void AEnemy::PawnSeen(APawn* SeenPawn)
+void AEnemy::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	APawn* SeenPawn = Cast<APawn>(Actor);
+	if (!SeenPawn || !Stimulus.WasSuccessfullySensed()) return;
+
 	const bool bShouldChaseTarget =
 		EnemyState != EEnemyState::EES_Dead &&
 		EnemyState != EEnemyState::EES_Chasing &&
 		EnemyState < EEnemyState::EES_Attacking &&
-		SeenPawn->ActorHasTag(FName("AldenCharacter"));
+		SeenPawn->ActorHasTag(FName("EngageableTarget"));
 
 	if (bShouldChaseTarget)
 	{
