@@ -37,9 +37,9 @@ void ACharacterBase::GetHit_Implementation(const FVector& ImpactPoint, AActor* H
 
 void ACharacterBase::LightAttack()
 {
-	if (EquippedWeapon)
+	if (CombatTarget && CombatTarget->ActorHasTag(FName("Dead")))
 	{
-		PlayAttackMontage(EquippedWeapon->GetLightAttackMontage());
+		CombatTarget = nullptr;
 	}
 }
 
@@ -51,9 +51,10 @@ void ACharacterBase::HeavyAttack()
 	}
 }
 
-void ACharacterBase::Die()
+void ACharacterBase::Die_Implementation()
 {
-
+	Tags.Add(FName("Dead"));
+	PlayDeathMontage();
 }
 
 void ACharacterBase::DirectionalHitReact(const FVector& ImpactPoint)
@@ -76,6 +77,7 @@ void ACharacterBase::DirectionalHitReact(const FVector& ImpactPoint)
 	{
 		Theta *= -1.f;
 	}
+
 	FName Section("FromBack");
 
 	if (Theta >= -45.f && Theta < 45.f)
@@ -99,7 +101,6 @@ void ACharacterBase::HandleDamage(float DamageAmount)
 	if (Attributes)
 	{
 		Attributes->ReceiveDamage(DamageAmount);
-
 	}
 }
 
@@ -149,6 +150,11 @@ bool ACharacterBase::CanMove()
 	return false;
 }
 
+void ACharacterBase::DisableMeshCollision()
+{
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
 void ACharacterBase::PlayHitReactMontage(const FName& SectionName)
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -166,7 +172,14 @@ int32 ACharacterBase::PlayAttackMontage(UAnimMontage* Montage)
 
 int32 ACharacterBase::PlayDeathMontage()
 {
-	return PlayRandomMontageSection(DeathMontage);
+	const int32 Selection = PlayRandomMontageSection(DeathMontage);
+	TEnumAsByte<EDeathPose> Pose(Selection);
+	if (Pose < EDeathPose::EDP_MAX)
+	{
+		DeathPose = Pose;
+	}
+
+	return Selection;
 }
 
 void ACharacterBase::PlayEquipMontage(const FName& SectionName)
@@ -179,10 +192,15 @@ void ACharacterBase::PlayEquipMontage(const FName& SectionName)
 	}
 }
 
-void ACharacterBase::StopAttackMontage()
+void ACharacterBase::PlayDodgeMontage(const FName& SectionName)
+{
+	PlayMontageSection(DodgeMontage, FName(SectionName));
+}
+
+void ACharacterBase::StopAttackMontage() // Edit: Add heavy attack option
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	if (AnimInstance && EquippedWeapon)
 	{
 		AnimInstance->Montage_Stop(0.25f, EquippedWeapon->GetLightAttackMontage());
 	}
@@ -190,7 +208,7 @@ void ACharacterBase::StopAttackMontage()
 
 FVector ACharacterBase::GetTranslationWarpTarget()
 {
-	if (CombatTarget == nullptr) return FVector();
+	if (CombatTarget == nullptr) return GetActorLocation();
 
 	const FVector CombatTargetLocation = CombatTarget->GetActorLocation();
 	const FVector Location = GetActorLocation();
@@ -203,17 +221,16 @@ FVector ACharacterBase::GetTranslationWarpTarget()
 
 FVector ACharacterBase::GetRotationWarpTarget()
 {
-	if (CombatTarget)
-	{
-		return CombatTarget->GetActorLocation();
-	}
-	return FVector();
+	if (CombatTarget == nullptr) return GetActorLocation();
+	
+	return CombatTarget->GetActorLocation();
 }
 
-void ACharacterBase::AttackEnd()
-{
+void ACharacterBase::AttackEnd() { }
 
-}
+
+void ACharacterBase::DodgeEnd() { }
+
 
 void ACharacterBase::AttachWeaponToBack()
 {
@@ -231,10 +248,8 @@ void ACharacterBase::AttachWeaponToHand()
 	}
 }
 
-void ACharacterBase::FinishEquipping()
-{
+void ACharacterBase::FinishEquipping() { }
 
-}
 
 void ACharacterBase::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
 {
@@ -257,15 +272,24 @@ void ACharacterBase::PlayMontageSection(UAnimMontage* Montage, const FName& Sect
 
 int32 ACharacterBase::PlayRandomMontageSection(UAnimMontage* Montage)
 {
-	if (Montage->GetNumSections() <= 0) return -1;
+	if (!Montage || Montage->GetNumSections() <= 0) return -1;
+
 	int32 NumberOfSections = Montage->GetNumSections();
 
 	int32 Selection;
-	do
-	{
-		Selection = FMath::RandRange(1, NumberOfSections);
 
-	} while (Selection == LastSelectionIndex);
+	if (NumberOfSections == 1)
+	{
+		Selection = 0;
+	}
+	else
+	{
+		do
+		{
+			Selection = FMath::RandRange(0, NumberOfSections - 1);
+
+		} while (Selection == LastSelectionIndex);
+	}
 
 	LastSelectionIndex = Selection;
 	FName SectionName = Montage->GetSectionName(Selection);
@@ -273,9 +297,3 @@ int32 ACharacterBase::PlayRandomMontageSection(UAnimMontage* Montage)
 
 	return Selection;
 }
-
-
-
-
-
-

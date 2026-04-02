@@ -7,6 +7,7 @@
 
 class USphereComponent;
 class UNiagaraComponent;
+class UNiagaraSystem;
 
 enum class EItemState : uint8
 {
@@ -37,6 +38,10 @@ class LEGENDSOFALDEN3_API AItem : public AActor
 		UFUNCTION()
 		virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+		virtual void SpawnPickupSystem();
+
+		virtual void SpawnPickupSound();
+
 		UPROPERTY(VisibleAnywhere, BlueprintReadOnly) 
 		UStaticMeshComponent* ItemMesh;
 
@@ -46,9 +51,14 @@ class LEGENDSOFALDEN3_API AItem : public AActor
 		EItemState ItemState = EItemState::EIS_World;
 
 		UPROPERTY(EditAnywhere)
-		UNiagaraComponent* EmbersEffect;
+		UNiagaraComponent* ItemEffect;
+
+		UPROPERTY(EditAnywhere)
+		USoundBase* PickupSound;
 
 	private:
+		UPROPERTY(EditAnywhere)
+		UNiagaraSystem* PickupEffect;
 
 };
 

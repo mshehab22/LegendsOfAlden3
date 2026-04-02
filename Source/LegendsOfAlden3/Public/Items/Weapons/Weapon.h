@@ -49,35 +49,43 @@ class LEGENDSOFALDEN3_API AWeapon : public AItem
 
 
 	private:
-
 		void BoxTrace(FHitResult& BoxHit);
 
 		UPROPERTY(EditDefaultsOnly, Category = "Combat")
 		UAnimMontage* LightAttackMontage;
 
+
 		UPROPERTY(EditDefaultsOnly, Category = "Combat")
 		UAnimMontage* HeavyAttackMontage;
+
 
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		FVector BoxTraceExtent = FVector(5.f);
 
+
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		bool bShowBoxDebug = false;
+
 
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		USoundBase* EquipSound;
 
+
 		UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 		UBoxComponent* WeaponBox;
+
 
 		UPROPERTY(VisibleAnywhere)
 		USceneComponent* BoxTraceStart;
 
+
 		UPROPERTY(VisibleAnywhere)
 		USceneComponent* BoxTraceEnd;
 
+
 		UPROPERTY(EditDefaultsOnly)
 		EWeaponGripType GripType;
+
 
 		UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 		float Damage = 20.f;
