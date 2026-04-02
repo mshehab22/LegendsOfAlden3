@@ -14,7 +14,20 @@ enum class EActionState : uint8
 	EAS_Unoccupied UMETA(DisplayName = "Unoccupied"),
 	EAS_HitReaction UMETA(DisplayName = "HitReaction"),
 	EAS_Attacking UMETA(DisplayName = "Attacking"),
-	EAS_EquippingWeapon UMETA(DisplayName = "Equipping Weapon")
+	EAS_Aiming UMETA(DisplayName = "Aiming"),
+	EAS_UsingAbility UMETA(DisplayName = "Using Ability"),
+	EAS_EquippingWeapon UMETA(DisplayName = "Equipping Weapon"),
+	EAS_Dodge UMETA(DisplayName = "Dodge"),
+	EAS_Dead UMETA(DisplayName = "Dead")
+};
+
+UENUM(BlueprintType)
+enum class ECombatType : uint8
+{
+	ECT_None UMETA(DisplayName = "None"),
+	ECT_Melee UMETA(DisplayName = "Melee"),
+	ECT_Spell UMETA(DisplayName = "Spell"),
+	ECT_Bow UMETA(DisplayName = "Bow")
 };
 
 UENUM(BlueprintType)
