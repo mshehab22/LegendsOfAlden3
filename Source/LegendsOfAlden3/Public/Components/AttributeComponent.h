@@ -5,6 +5,11 @@
 #include "AttributeComponent.generated.h"
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, float, NewPercent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnManaChanged, float, NewPercent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGoldChanged, int32, NewAmount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSoulsChanged, int32, NewAmount);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LEGENDSOFALDEN3_API UAttributeComponent : public UActorComponent
 {
@@ -21,16 +26,27 @@ class LEGENDSOFALDEN3_API UAttributeComponent : public UActorComponent
 
 		void ManaUsage(float ManaCost);
 
-		float GetHealthPercent();
+		float GetHealthPercent() const;
 
-		float GetManaPercent();
+		float GetManaPercent() const;
 
-		bool IsAlive();
+		bool IsAlive() const;
 
 		void AddGold(int32 AmountOfGold);
 
 		void AddSouls(int32 NumberOfSouls);
 
+		UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+		FOnHealthChanged OnHealthChanged;
+
+		UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+		FOnManaChanged OnManaChanged;
+
+		UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+		FOnGoldChanged OnGoldChanged;
+
+		UPROPERTY(BlueprintAssignable, Category = "Attributes|Events")
+		FOnSoulsChanged OnSoulsChanged;
 
 		FORCEINLINE int32 GetGold() const { return Gold; }
 
@@ -38,15 +54,17 @@ class LEGENDSOFALDEN3_API UAttributeComponent : public UActorComponent
 
 		FORCEINLINE float GetMana() const { return Mana; }
 
+
+
 	protected:
 		virtual void BeginPlay() override;
 
 	private:
 		UPROPERTY(EditAnywhere, Category = "Actor Attributes")
-		float Health;
+		float Health = 100.f;
 
 		UPROPERTY(EditAnywhere, Category = "Actor Attributes")
-		float MaxHealth;
+		float MaxHealth = 100.f;
 
 		UPROPERTY(EditAnywhere, Category = "Actor Attributes")
 		float Mana;

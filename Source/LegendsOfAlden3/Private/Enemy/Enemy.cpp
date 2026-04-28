@@ -61,13 +61,20 @@ void AEnemy::Tick(float DeltaTime)
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	HandleDamage(DamageAmount);
-	CombatTarget = EventInstigator->GetPawn();
-	
-	if (IsOutsideAttackRadius())
+
+	if (EventInstigator)
+	{
+		CombatTarget = EventInstigator->GetPawn();
+	}
+	else if (DamageCauser)
+	{
+		CombatTarget = DamageCauser->GetInstigator();   
+	}
+
+	if (CombatTarget && IsOutsideAttackRadius())
 	{
 		ChaseTarget();
 	}
-
 	return DamageAmount;
 }
 
