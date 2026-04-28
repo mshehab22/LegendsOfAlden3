@@ -1,21 +1,29 @@
 #include "Items/Spells/Spell.h"
 #include "Items/Spells/SpellProjectile.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
-void ASpell::Cast(ACharacter* Caster) const
+ASpellProjectile* ASpell::BeginCast(ACharacter* Caster) const
 {
-	if (!Caster || !ProjectileClass) return;
+    if (!Caster || !ProjectileClass) return nullptr;
 
-	FVector SpawnLocation = Caster->GetMesh()->GetSocketLocation("LeftHandSocket");
-	FRotator SpawnRotation = Caster->GetControlRotation();
+    const FVector SpawnLocation = Caster->GetMesh()->GetSocketLocation("LeftHandSocket");
+    const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocation);
 
-	FActorSpawnParameters Params;
-	Params.Owner = Caster;
+    ASpellProjectile* Projectile = Caster->GetWorld()->SpawnActorDeferred<ASpellProjectile>(ProjectileClass, SpawnTransform, Caster, Caster);
 
-	ASpellProjectile* Projectile = Caster->GetWorld()->SpawnActor<ASpellProjectile>( ProjectileClass, SpawnLocation, SpawnRotation, Params);
+    if (Projectile)
+    {
+        Projectile->SetDamage(Damage);
+        Projectile->ConfigureVFX(TrailEffect, ImpactEffect, ImpactSound);
+        Projectile->FinishSpawning(SpawnTransform);
+        Projectile->AttachToHand(Caster->GetMesh(), "LeftHandSocket");
+    }
 
-	if (Projectile)
-	{
-		Projectile->SetDamage(Damage);
-	}
+    if (CastSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(Caster, CastSound, SpawnLocation);
+    }
+
+    return Projectile;
 }

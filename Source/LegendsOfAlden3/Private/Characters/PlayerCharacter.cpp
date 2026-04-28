@@ -14,6 +14,7 @@
 #include <Kismet/KismetSystemLibrary.h>
 #include "Components/DecalComponent.h"
 #include "Items/Spells/Spell.h"
+#include "Items/Spells/SpellProjectile.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -54,16 +55,14 @@ APlayerCharacter::APlayerCharacter()
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-	if (ActionState == EActionState::EAS_Aiming)
-	{
-		FRotator ControlRot = GetControlRotation();
-		SetActorRotation(FRotator(0.f, ControlRot.Yaw, 0.f));
-	}
 
 	UpdateRotationState();
 	HandleLockOn(DeltaTime);
-	UpdateHUD(DeltaTime);
+
+	if (Attributes)
+	{
+		Attributes->RegenerateMana(DeltaTime);
+	}
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -92,15 +91,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Completed, this, &APlayerCharacter::ToggleLockOn);
 
-		EnhancedInputComponent->BindAction(SpellAction, ETriggerEvent::Started, this, &APlayerCharacter::StartSpell);
-		EnhancedInputComponent->BindAction(SpellAction, ETriggerEvent::Completed, this, &APlayerCharacter::ReleaseSpell);
+		EnhancedInputComponent->BindAction(SpellAction, ETriggerEvent::Started, this, &APlayerCharacter::CastSpell);
 	}
 }
 
 float APlayerCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	HandleDamage(DamageAmount);
-	SetHUDHealth();
 	return DamageAmount;
 }
 
@@ -126,6 +123,12 @@ void APlayerCharacter::BeginPlay()
 
 		InitializeGameOverlay(PlayerController);
 	}
+
+	if (Attributes)
+	{
+		Attributes->OnHealthChanged.AddDynamic(this, &APlayerCharacter::HandleHealthChanged);
+		Attributes->OnManaChanged.AddDynamic(this, &APlayerCharacter::HandleManaChanged);
+	}
 }
 
 void APlayerCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
@@ -136,6 +139,12 @@ void APlayerCharacter::GetHit_Implementation(const FVector& ImpactPoint, AActor*
 	if (Attributes && Attributes->GetHealthPercent() > 0.f)
 	{
 		ActionState = EActionState::EAS_HitReaction;
+	}
+
+	if (PendingSpellProjectile)
+	{
+		PendingSpellProjectile->Destroy();
+		PendingSpellProjectile = nullptr;
 	}
 }
 
@@ -342,41 +351,32 @@ void APlayerCharacter::StopRun()
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
-void APlayerCharacter::StartSpell()
+void APlayerCharacter::CastSpell()
 {
-	UE_LOG(LogTemp, Warning, TEXT("StartSpell"));
 	if (!CanCastSpell()) return;
 
-
-	ActionState = EActionState::EAS_Aiming;
-	bIsAimingSpell = true;
-}
-
-void APlayerCharacter::ReleaseSpell()
-{
-	UE_LOG(LogTemp, Warning, TEXT("ReleaseSpell"));
-	if (!bIsAimingSpell) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("CanCastSpell = %d"), CanCastSpell());
-
-	if (!CanCastSpell())
-	{
-		ActionState = EActionState::EAS_Unoccupied;
-		return;
-	}
-
+	// Commit to the cast: lock state and deduct cost up front.
 	ActionState = EActionState::EAS_UsingAbility;
 
-	float Duration = PlayAnimMontage(SpellCastMontage);
+	CastRotation = GetControlRotation();
 
-	UE_LOG(LogTemp, Warning, TEXT("Montage Duration: %f"), Duration);
+	SetActorRotation(FRotator(0.f, CastRotation.Yaw, 0.f));
+	if (Attributes && EquippedSpellClass)
+	{
+		const ASpell* SpellCDO = EquippedSpellClass->GetDefaultObject<ASpell>();
+		if (SpellCDO)
+		{
+			Attributes->ManaUsage(SpellCDO->ManaCost);
+		}
+	}
+
+	PlayAnimMontage(SpellCastMontage);
 }
 
-bool APlayerCharacter::CanCastSpell()
+bool APlayerCharacter::CanCastSpell() const
 {
-	return EquippedSpellClass && HasEnoughMana() && (IsUnoccupied() || ActionState == EActionState::EAS_Aiming);
+	return EquippedSpellClass && SpellCastMontage && HasEnoughMana() && (ActionState == EActionState::EAS_Unoccupied);
 }
-
 
 void APlayerCharacter::EquipWeapon(AWeapon* Weapon) // Edit: make equipping for two handed socket
 {
@@ -475,7 +475,7 @@ void APlayerCharacter::Die_Implementation()
 	DisableMeshCollision();
 }
 
-bool APlayerCharacter::HasEnoughMana()
+bool APlayerCharacter::HasEnoughMana() const
 {
 	if (!Attributes || !EquippedSpellClass) return false;
 
@@ -499,18 +499,26 @@ void APlayerCharacter::SpawnSpell()
 {
 	if (!EquippedSpellClass) return;
 
-	const ASpell* Spell = EquippedSpellClass->GetDefaultObject<ASpell>();
-	if (!Spell) return;
+	const ASpell* SpellCDO = EquippedSpellClass->GetDefaultObject<ASpell>();
+	if (!SpellCDO) return;
 
-	Spell->Cast(this);
+	PendingSpellProjectile = SpellCDO->BeginCast(this);
+}
 
-	if (Attributes && GameOverlay)
+void APlayerCharacter::LaunchSpell()
+{
+	if (!PendingSpellProjectile) return;
+
+	PendingSpellProjectile->Launch(CastRotation);
+	PendingSpellProjectile = nullptr;
+}
+
+void APlayerCharacter::CastEnd()
+{
+	if (ActionState == EActionState::EAS_UsingAbility)
 	{
-		Attributes->ManaUsage(Spell->ManaCost);
-		GameOverlay->SetManaBarPercent(Attributes->GetManaPercent());
+		ActionState = EActionState::EAS_Unoccupied;
 	}
-
-	ActionState = EActionState::EAS_Unoccupied;
 }
 
 void APlayerCharacter::HandleLockOn(float DeltaTime)
@@ -638,11 +646,6 @@ bool APlayerCharacter::IsGrounded()
 	return !GetCharacterMovement()->IsFalling();
 }
 
-bool APlayerCharacter::IsAimingSpell()
-{
-	return ActionState == EActionState::EAS_Aiming;
-}
-
 void APlayerCharacter::InitializeGameOverlay(APlayerController* PlayerController)
 {
 	if (AGameHUD* GameHUD = Cast<AGameHUD>(PlayerController->GetHUD()))
@@ -709,4 +712,20 @@ void APlayerCharacter::UpdateLockOnDecal()
 	LockOnDecal->SetWorldLocation(Location);
 
 	LockOnDecal->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
+}
+
+void APlayerCharacter::HandleHealthChanged(float NewPercent)
+{
+	if (GameOverlay)
+	{
+		GameOverlay->SetHealthBarPercent(NewPercent);
+	}
+}
+
+void APlayerCharacter::HandleManaChanged(float NewPercent)
+{
+	if (GameOverlay)
+	{
+		GameOverlay->SetManaBarPercent(NewPercent);
+	}
 }

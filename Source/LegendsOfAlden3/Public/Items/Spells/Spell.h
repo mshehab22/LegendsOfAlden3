@@ -25,6 +25,17 @@ class LEGENDSOFALDEN3_API ASpell : public AItem
 		UPROPERTY(EditAnywhere, Category = "Spell")
 		float Damage = 25.f;
 
-		// Casting entry point
-		void Cast(class ACharacter* Caster) const;
+		UPROPERTY(EditAnywhere, Category = "Spell|VFX")
+		UNiagaraSystem* TrailEffect;
+
+		UPROPERTY(EditAnywhere, Category = "Spell|VFX")
+		UNiagaraSystem* ImpactEffect;
+
+		UPROPERTY(EditAnywhere, Category = "Spell|VFX")
+		USoundBase* CastSound;
+
+		UPROPERTY(EditAnywhere, Category = "Spell|VFX")
+		USoundBase* ImpactSound;
+
+		ASpellProjectile* BeginCast(ACharacter* Caster) const;
 };
