@@ -71,6 +71,15 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		UPROPERTY(BlueprintReadOnly)
 		EEnemyMovement EnemyMovement = EEnemyMovement::EEM_CanMove;
 
+		/* Spell Attack */
+		void CastSpellAttack();
+
+		void StartSpellCooldown();
+
+		void ClearSpellCooldown();
+
+		virtual void CastEnd() override;
+
 	private:
 		/** AI Behavior*/
 		void InitializeEnemy();
@@ -206,6 +215,16 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 
 		UPROPERTY(EditAnywhere, Category = "Combat")
 		TSubclassOf<class ASoul> SoulClass;
+
+		FTimerHandle SpellCooldownTimer;
+
+		bool bSpellOnCooldown = false;
+
+		UPROPERTY(EditAnywhere, Category = "Combat|Spells")
+		float SpellCooldownTime = 5.f;
+
+		UPROPERTY(EditAnywhere, Category = "Combat|Spells", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+		float SpellCastChance = 0.3f;
 
 
 		UPROPERTY()

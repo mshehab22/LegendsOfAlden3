@@ -9,6 +9,8 @@
 class UAnimMontage;
 class AWeapon;
 class UAttributeComponent;
+class ASpell;
+class ASpellProjectile;
 
 UCLASS()
 class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterface
@@ -56,6 +58,27 @@ class LEGENDSOFALDEN3_API ACharacterBase : public ACharacter, public IHitInterfa
 		virtual bool CanMove();
 
 		void DisableMeshCollision();
+
+		/* Spell System */
+		UFUNCTION(BlueprintCallable)
+		virtual void SpawnSpell();
+
+		UFUNCTION(BlueprintCallable)
+		virtual void LaunchSpell();
+
+		UFUNCTION(BlueprintCallable)
+		virtual void CastEnd();
+
+		UPROPERTY(EditAnywhere, Category = "Spell")
+		TSubclassOf<ASpell> EquippedSpellClass;
+
+		UPROPERTY(EditDefaultsOnly, Category = "Spell")
+		UAnimMontage* SpellCastMontage;
+
+		UPROPERTY()
+		ASpellProjectile* PendingSpellProjectile = nullptr;
+
+		FRotator CastRotation;
 
 		/* Play montage functions */
 		void PlayHitReactMontage(const FName& SectionName);
