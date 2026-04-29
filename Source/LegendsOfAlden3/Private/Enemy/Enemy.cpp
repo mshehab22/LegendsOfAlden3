@@ -9,6 +9,8 @@
 #include "HUD/HealthBarComponent.h"
 #include "Items/Weapons/Weapon.h"
 #include "Items/Soul.h"
+#include "Items/Spells/Spell.h"
+#include "Items/Spells/SpellProjectile.h"
 
 AEnemy::AEnemy()
 {
@@ -61,13 +63,20 @@ void AEnemy::Tick(float DeltaTime)
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	HandleDamage(DamageAmount);
-	CombatTarget = EventInstigator->GetPawn();
-	
-	if (IsOutsideAttackRadius())
+
+	if (EventInstigator)
+	{
+		CombatTarget = EventInstigator->GetPawn();
+	}
+	else if (DamageCauser)
+	{
+		CombatTarget = DamageCauser->GetInstigator();   
+	}
+
+	if (CombatTarget && IsOutsideAttackRadius())
 	{
 		ChaseTarget();
 	}
-
 	return DamageAmount;
 }
 
@@ -106,6 +115,13 @@ void AEnemy::GetHit_Implementation(const FVector& ImpactPoint, AActor* Hitter)
 
 	ClearPatrolTimer();
 	ClearAttackTimer();
+
+	if (PendingSpellProjectile)
+	{
+		PendingSpellProjectile->Destroy();
+		PendingSpellProjectile = nullptr;
+	}
+
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	if (IsEngaged())
@@ -154,6 +170,14 @@ void AEnemy::Die_Implementation()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	SetWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 	SpawnSoul();
+
+	ClearSpellCooldown();
+
+	if (PendingSpellProjectile)
+	{
+		PendingSpellProjectile->Destroy();
+		PendingSpellProjectile = nullptr;
+	}
 }
 
 void AEnemy::SpawnSoul()
@@ -253,6 +277,49 @@ bool AEnemy::CanDisarm()
 bool AEnemy::CanArm()
 {
 	return (EnemyState == EEnemyState::EES_Patrolling && WeaponType == ECharacterState::ECS_Unequipped);
+}
+
+void AEnemy::CastSpellAttack()
+{
+	if (CombatTarget == nullptr) return;
+	if (!EquippedSpellClass || !SpellCastMontage) return;
+
+	SetEnemyState(EEnemyState::EES_Engaged);
+	EnemyMovement = EEnemyMovement::EEM_CannotMove;
+
+	if (EnemyController)
+	{
+		EnemyController->StopMovement();
+	}
+
+	// Aim at the target. Yaw only — keep the boss upright.
+	const FVector ToTarget = CombatTarget->GetActorLocation() - GetActorLocation();
+	const FRotator AimRotation(0.f, ToTarget.Rotation().Yaw, 0.f);
+	SetActorRotation(AimRotation);
+	CastRotation = AimRotation;
+
+	PlayAnimMontage(SpellCastMontage);
+	StartSpellCooldown();
+}
+
+void AEnemy::StartSpellCooldown()
+{
+	bSpellOnCooldown = true;
+	GetWorldTimerManager().SetTimer(SpellCooldownTimer, this, &AEnemy::ClearSpellCooldown, SpellCooldownTime);
+}
+
+void AEnemy::ClearSpellCooldown()
+{
+	bSpellOnCooldown = false;
+}
+
+void AEnemy::CastEnd()
+{
+	Super::CastEnd();
+
+	SetEnemyState(EEnemyState::EES_NoState);
+	EnemyMovement = EEnemyMovement::EEM_CanMove;
+	CheckCombatTarget();
 }
 
 void AEnemy::InitializeEnemy()
@@ -467,7 +534,20 @@ void AEnemy::StartAttackTimer()
 
 	const float AttackTime = FMath::RandRange(AttackMin, AttackMax);
 
-	GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::LightAttack, AttackTime);
+	// Decide which kind of attack to schedule
+	const bool bUseSpell = !bSpellOnCooldown
+		&& EquippedSpellClass
+		&& SpellCastMontage
+		&& FMath::FRand() < SpellCastChance;
+
+	if (bUseSpell)
+	{
+		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::CastSpellAttack, AttackTime);
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::LightAttack, AttackTime);
+	}
 }
 
 void AEnemy::ClearAttackTimer()

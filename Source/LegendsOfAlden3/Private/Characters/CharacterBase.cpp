@@ -4,6 +4,8 @@
 #include "Components/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Items/Spells/Spell.h"
+#include "Items/Spells/SpellProjectile.h"
 
 ACharacterBase::ACharacterBase()
 {
@@ -154,6 +156,26 @@ void ACharacterBase::DisableMeshCollision()
 {
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
+
+void ACharacterBase::SpawnSpell()
+{
+	if (!EquippedSpellClass) return;
+
+	const ASpell* SpellCDO = EquippedSpellClass->GetDefaultObject<ASpell>();
+	if (!SpellCDO) return;
+
+	PendingSpellProjectile = SpellCDO->BeginCast(this);
+}
+
+void ACharacterBase::LaunchSpell()
+{
+	if (!PendingSpellProjectile) return;
+
+	PendingSpellProjectile->Launch(CastRotation);
+	PendingSpellProjectile = nullptr;
+}
+
+void ACharacterBase::CastEnd() {}
 
 void ACharacterBase::PlayHitReactMontage(const FName& SectionName)
 {

@@ -17,6 +17,7 @@ class ATreasure;
 class ASpell;
 class UGameOverlay;
 class UDecalComponent;
+class ASpellProjectile;
 
 UCLASS()
 class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPickupInterface
@@ -60,12 +61,12 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 		void StopRun();
 
 		/* Spell System */
-		void StartSpell();    // Press
-		void ReleaseSpell();  // Release
-		bool CanCastSpell();
+		void CastSpell();
+		bool CanCastSpell() const;
+		bool HasEnoughMana() const;
 
-		UPROPERTY(EditAnywhere, Category = "Spell")
-		TSubclassOf<ASpell> EquippedSpellClass;
+		virtual void CastEnd() override;
+
 		/* Combat */
 		void EquipWeapon(AWeapon* Weapon);
 		void Disarm();
@@ -79,16 +80,12 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 		virtual void FinishEquipping()override;
 		virtual int32 PlayAttackMontage(UAnimMontage* Montage) override;
 		virtual void Die_Implementation() override;
-		bool HasEnoughMana();
 
 		UFUNCTION(BlueprintCallable)
 		void EnableAttackBuffer();
 
 		UFUNCTION(BlueprintCallable)
 		void HitReactEnd();
-
-		UFUNCTION(BlueprintCallable)
-		void SpawnSpell();
 
 		UPROPERTY(EditAnywhere, Category = "Movement")
 		float WalkSpeed = 200.f;
@@ -128,8 +125,6 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 
 		bool IsGrounded();
 
-		bool IsAimingSpell();
-
 		void InitializeGameOverlay(APlayerController* PlayerController);
 
 		void SetHUDHealth();
@@ -141,6 +136,13 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 		void InitializeLockOnDecal();
 
 		void UpdateLockOnDecal();
+
+
+		UFUNCTION()
+		void HandleHealthChanged(float NewPercent);
+
+		UFUNCTION()
+		void HandleManaChanged(float NewPercent);
 
 		/* Input Variables */
 		UPROPERTY(EditAnywhere, Category = Input)
@@ -215,13 +217,8 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 
 		FVector2D MovementInput;
 
+
 		bool bCanBufferAttack = false;
 
 		float LockOnCameraOffsetYaw = 0.f;
-
-		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat", meta = (AllowPrivateAccess = "true"))
-		bool bIsAimingSpell = false;
-
-		UPROPERTY(EditDefaultsOnly, Category = "Spell")
-		UAnimMontage* SpellCastMontage;
 };

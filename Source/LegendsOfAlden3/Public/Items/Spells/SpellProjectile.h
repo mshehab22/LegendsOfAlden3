@@ -6,32 +6,53 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
+class USoundBase;
 
 UCLASS()
 class LEGENDSOFALDEN3_API ASpellProjectile : public AActor
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	public:
-		ASpellProjectile();
+    public:
+        ASpellProjectile();
 
-		void SetDamage(float InDamage);
+        void SetDamage(float InDamage);
 
-	protected:
-		virtual void BeginPlay() override;
+        void ConfigureVFX(UNiagaraSystem* InTrail, UNiagaraSystem* InImpact, USoundBase* InImpactSound);
 
-	private:
-		UPROPERTY(VisibleAnywhere)
-		USphereComponent* CollisionSphere;
+        void AttachToHand(USceneComponent* AttachTarget, FName SocketName);
 
-		UPROPERTY(VisibleAnywhere)
-		UStaticMeshComponent* Mesh;
+        void Launch(const FRotator& LaunchRotation);
 
-		UPROPERTY(VisibleAnywhere)
-		UProjectileMovementComponent* ProjectileMovement;
+    protected:
+        virtual void BeginPlay() override;
 
-		float Damage;
+    private:
+        UPROPERTY(VisibleAnywhere)
+        USphereComponent* CollisionSphere;
 
-		UFUNCTION()
-		void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+        UPROPERTY(VisibleAnywhere)
+        UStaticMeshComponent* Mesh;
+
+        UPROPERTY(VisibleAnywhere)
+        UProjectileMovementComponent* ProjectileMovement;
+
+        UPROPERTY()
+        UNiagaraComponent* TrailComponent;
+
+        UPROPERTY()
+        UNiagaraSystem* TrailEffect;
+
+        UPROPERTY()
+        UNiagaraSystem* ImpactEffect;
+
+        UPROPERTY()
+        USoundBase* ImpactSound;
+
+        float Damage;
+
+        UFUNCTION()
+        void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };
