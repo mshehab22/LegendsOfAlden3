@@ -358,7 +358,8 @@ void APlayerCharacter::CastSpell()
 	// Commit to the cast: lock state and deduct cost up front.
 	ActionState = EActionState::EAS_UsingAbility;
 
-	CastRotation = GetControlRotation();
+	const FRotator ControlRotation = GetControlRotation();
+	CastRotation = FRotator(0.f, ControlRotation.Yaw, 0.f);
 
 	SetActorRotation(FRotator(0.f, CastRotation.Yaw, 0.f));
 	if (Attributes && EquippedSpellClass)
@@ -493,24 +494,6 @@ void APlayerCharacter::EnableAttackBuffer()
 void APlayerCharacter::HitReactEnd()
 {
 	ActionState = EActionState::EAS_Unoccupied; 
-}
-
-void APlayerCharacter::SpawnSpell()
-{
-	if (!EquippedSpellClass) return;
-
-	const ASpell* SpellCDO = EquippedSpellClass->GetDefaultObject<ASpell>();
-	if (!SpellCDO) return;
-
-	PendingSpellProjectile = SpellCDO->BeginCast(this);
-}
-
-void APlayerCharacter::LaunchSpell()
-{
-	if (!PendingSpellProjectile) return;
-
-	PendingSpellProjectile->Launch(CastRotation);
-	PendingSpellProjectile = nullptr;
 }
 
 void APlayerCharacter::CastEnd()

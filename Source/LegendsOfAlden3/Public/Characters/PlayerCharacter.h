@@ -65,21 +65,7 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 		bool CanCastSpell() const;
 		bool HasEnoughMana() const;
 
-		UFUNCTION(BlueprintCallable)
-		void SpawnSpell();   // Anim notify: spawns projectile
-
-		UFUNCTION(BlueprintCallable)
-		void LaunchSpell();
-
-		UFUNCTION(BlueprintCallable)
-		void CastEnd();    // Anim notify at end of montage: releases ActionState
-
-
-		UPROPERTY(EditAnywhere, Category = "Spell")
-		TSubclassOf<ASpell> EquippedSpellClass;
-
-		UPROPERTY(EditDefaultsOnly, Category = "Spell")
-		UAnimMontage* SpellCastMontage;
+		virtual void CastEnd() override;
 
 		/* Combat */
 		void EquipWeapon(AWeapon* Weapon);
@@ -228,13 +214,6 @@ class LEGENDSOFALDEN3_API APlayerCharacter : public ACharacterBase, public IPick
 
 		UPROPERTY()
 		UGameOverlay* GameOverlay;
-
-
-		UPROPERTY()
-		ASpellProjectile* PendingSpellProjectile = nullptr;
-
-
-		FRotator CastRotation;
 
 		FVector2D MovementInput;
 
