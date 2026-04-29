@@ -16,3 +16,13 @@ void UGameOverlay::SetManaBarPercent(float Percent)
 		ManaProgressBar->SetPercent(Percent);
 	}
 }
+
+void UGameOverlay::SetBossHealthBarPercent(float Percent)
+{
+	if (BossHealthProgressBar) BossHealthProgressBar->SetPercent(Percent);
+}
+
+void UGameOverlay::SetBossHealthBarVisible(bool bVisible)
+{
+	if (BossHealthProgressBar) BossHealthProgressBar->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+}

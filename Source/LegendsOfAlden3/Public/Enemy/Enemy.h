@@ -59,6 +59,18 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 
 		virtual bool CanArm() override;
 		/* </ABaseCharacter> */
+		virtual void StartAttackTimer();
+		virtual void ClearAttackTimer();
+
+		void MoveToTarget(AActor* Target);
+
+		/* <Combat> */
+		void CheckCombatTarget();
+
+		void LoseInterest();
+
+		void ChaseTarget();
+		/* </Combat> */
 
 		UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 		EEnemyState EnemyState = EEnemyState::EES_Patrolling;
@@ -71,6 +83,7 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		UPROPERTY(BlueprintReadOnly)
 		EEnemyMovement EnemyMovement = EEnemyMovement::EEM_CanMove;
 
+<<<<<<< Updated upstream
 		/* Spell Attack */
 		void CastSpellAttack();
 
@@ -79,12 +92,13 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 		void ClearSpellCooldown();
 
 		virtual void CastEnd() override;
+=======
+
+>>>>>>> Stashed changes
 
 	private:
 		/** AI Behavior*/
 		void InitializeEnemy();
-
-		void MoveToTarget(AActor* Target);
 
 		void SpawnDefaultWeapon();
 
@@ -119,17 +133,8 @@ class LEGENDSOFALDEN3_API AEnemy : public ACharacterBase
 
 		AActor* ChoosePatrolTarget();
 
-		/* Combat */
-		void CheckCombatTarget();
-
-		void LoseInterest();
-
-		void ChaseTarget();
 
 		//void Attack();
-		void StartAttackTimer();
-
-		void ClearAttackTimer();
 
 		bool IsOutsideCombatRadius();
 

@@ -16,6 +16,9 @@ class LEGENDSOFALDEN3_API UGameOverlay : public UUserWidget
 		void SetHealthBarPercent(float Percent);
 		void SetManaBarPercent(float Percent);
 
+		void SetBossHealthBarPercent(float Percent);
+		void SetBossHealthBarVisible(bool bVisible);
+
 	private:
 		UPROPERTY(meta = (BindWidget))
 		UProgressBar* HealthProgressBar;
@@ -23,4 +26,8 @@ class LEGENDSOFALDEN3_API UGameOverlay : public UUserWidget
 
 		UPROPERTY(meta = (BindWidget))
 		UProgressBar* ManaProgressBar;
+
+		UPROPERTY(meta = (BindWidget))
+		UProgressBar* BossHealthProgressBar;
+
 };
